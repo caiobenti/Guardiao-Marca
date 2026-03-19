@@ -22,7 +22,7 @@ export default function RootLayout({
     <html lang="pt-BR" className={`${inter.variable} h-full`}>
       <body className="h-full flex flex-col bg-[#f9f9f7]">
         <TopNav />
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 min-h-0 overflow-hidden">
           {children}
         </main>
       </body>

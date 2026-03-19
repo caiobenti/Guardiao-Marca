@@ -17,5 +17,9 @@ export default async function CriarPage() {
     .eq("user_code", CURRENT_USER_CODE)
     .maybeSingle();
 
-  return <CriarLayout icps={icps ?? []} brandParams={brandParams ?? undefined} />;
+  return (
+    <div className="h-full">
+      <CriarLayout icps={icps ?? []} brandParams={brandParams ?? undefined} />
+    </div>
+  );
 }

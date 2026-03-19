@@ -16,7 +16,7 @@ export default async function ParametrosPage() {
 
   if (userError || !user) {
     return (
-      <div className="min-h-screen bg-[#f9f9f7] flex items-center justify-center">
+      <div className="h-full bg-[#f9f9f7] flex items-center justify-center">
         <div
           className="bg-white rounded-[10px] p-8 border border-[#e8e8e4] text-center max-w-sm"
           style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
@@ -48,7 +48,7 @@ export default async function ParametrosPage() {
     .order("created_at", { ascending: true });
 
   return (
-    <div className="min-h-screen bg-[#f9f9f7] py-8 px-6">
+    <div className="h-full overflow-y-auto bg-[#f9f9f7] py-8 px-6">
       <div className="max-w-[900px] mx-auto flex flex-col gap-5">
 
         {/* Cabeçalho */}
