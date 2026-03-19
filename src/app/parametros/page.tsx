@@ -46,13 +46,12 @@ export default async function ParametrosPage() {
     .eq("user_code", CURRENT_USER_CODE)
     .maybeSingle();
 
-  // 3. Busca ICP ativo no DB3
-  const { data: icp } = await supabase
+  // 3. Busca todas as personas do DB3 (múltiplas)
+  const { data: icps } = await supabase
     .from("DB3 - icp_archetypes")
     .select("*")
     .eq("user_code", CURRENT_USER_CODE)
-    .eq("status", "ativo")
-    .maybeSingle();
+    .order("created_at", { ascending: true });
 
   return (
     <div className="min-h-screen bg-[#f9f9f7] py-8 px-6">
@@ -74,7 +73,7 @@ export default async function ParametrosPage() {
         </div>
 
         {/* Bloco full-width */}
-        <ICPCard data={icp ?? undefined} userCode={CURRENT_USER_CODE} />
+        <ICPCard data={icps ?? []} userCode={CURRENT_USER_CODE} />
 
       </div>
     </div>
