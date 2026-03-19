@@ -1,37 +1,58 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { BrandParameters } from "@/lib/types";
 
-const TYPOGRAPHY_OPTIONS = [
-  { value: "serif", label: "Serif — elegante e clássico" },
-  { value: "sans-serif", label: "Sans-serif — moderno e limpo" },
-  { value: "monospace", label: "Monospace — técnico e preciso" },
-  { value: "display", label: "Display — expressivo e marcante" },
-];
-
-const IMAGE_STYLE_OPTIONS = [
-  { value: "clean", label: "Clean — minimalista e amplo" },
-  { value: "bold", label: "Bold — impactante e vibrante" },
-  { value: "organic", label: "Organic — natural e autêntico" },
-  { value: "minimal", label: "Minimal — espaço negativo e foco" },
-];
+const TYPOGRAPHY_OPTIONS = ["serif", "sans-serif", "monospace", "display"];
+const IMAGE_STYLE_OPTIONS = ["clean", "bold", "organic", "minimal"];
+const LABELS: Record<string, string> = {
+  serif: "Serif", "sans-serif": "Sans-serif", monospace: "Monospace", display: "Display",
+  clean: "Clean", bold: "Bold", organic: "Organic", minimal: "Minimal",
+};
 
 interface Props {
   data?: Partial<BrandParameters>;
   userCode: string;
 }
 
+type SaveStatus = "idle" | "pending" | "saving" | "saved";
+
 export function DNAVisual({ data, userCode }: Props) {
-  const initialPalette = data?.color_palette ?? ["", "", ""];
+  const [editing, setEditing] = useState(false);
+  const initialPalette = data?.color_palette ?? [];
   const [palette, setPalette] = useState<string[]>(
-    initialPalette.length >= 3 ? initialPalette : [...initialPalette, "", "", ""].slice(0, 3)
+    [...initialPalette, "", "", ""].slice(0, 3)
   );
   const [typography, setTypography] = useState(data?.typography ?? "");
   const [imageStyle, setImageStyle] = useState(data?.image_style ?? "");
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const [undoData, setUndoData] = useState<typeof data>(undefined);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isDirty = useRef(false);
+
+  useEffect(() => {
+    if (!editing) return;
+    if (!isDirty.current) { isDirty.current = true; return; }
+
+    setSaveStatus("pending");
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      setSaveStatus("saving");
+      setUndoData(data);
+      await supabase.from("DB2 - brand_parameters").upsert({
+        user_code: userCode,
+        color_palette: palette.filter(c => c.trim() !== ""),
+        typography,
+        image_style: imageStyle,
+        update_at: new Date().toISOString(),
+      }, { onConflict: "user_code" });
+      setSaveStatus("saved");
+      isDirty.current = false;
+      setTimeout(() => setSaveStatus("idle"), 4000);
+    }, 1500);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [palette, typography, imageStyle]);
 
   function updatePalette(index: number, value: string) {
     const next = [...palette];
@@ -39,124 +60,118 @@ export function DNAVisual({ data, userCode }: Props) {
     setPalette(next);
   }
 
-  async function handleSave() {
-    setSaving(true);
-    setSaved(false);
-
-    const cleanPalette = palette.filter((c) => c.trim() !== "");
-
-    const payload = {
-      user_code: userCode,
-      color_palette: cleanPalette,
-      typography,
-      image_style: imageStyle,
-      update_at: new Date().toISOString(),
-    };
-
-    await supabase
-      .from("DB2 - brand_parameters")
-      .upsert(payload, { onConflict: "user_code" });
-
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
-  }
+  const cleanPalette = palette.filter(c => c.trim() !== "");
+  const hasValues = cleanPalette.length > 0 || typography || imageStyle;
 
   return (
-    <div
-      className="bg-white rounded-[10px] p-6 border border-[#e8e8e4]"
-      style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
-    >
-      <div className="mb-6">
-        <h2 className="text-base font-semibold text-gray-900">DNA Visual</h2>
-        <p className="text-sm text-gray-400 mt-0.5">
-          Paleta de cores, tipografia e elementos visuais da marca.
-        </p>
+    <div className="bg-white rounded-[10px] border border-[#e8e8e4]" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-4 border-b border-[#e8e8e4]">
+        <h2 className="text-sm font-semibold text-gray-900">DNA Visual</h2>
+        <div className="flex items-center gap-3">
+          {saveStatus === "pending" && <span className="text-xs text-amber-500">● não salvo</span>}
+          {saveStatus === "saving" && <span className="text-xs text-gray-400">Salvando...</span>}
+          {saveStatus === "saved" && (
+            <span className="text-xs text-[#1a6b5a]">
+              ✓ Salvo
+              {undoData && (
+                <button onClick={async () => {
+                  await supabase.from("DB2 - brand_parameters").upsert({
+                    user_code: userCode,
+                    color_palette: undoData?.color_palette ?? [],
+                    typography: undoData?.typography ?? "",
+                    image_style: undoData?.image_style ?? "",
+                    update_at: new Date().toISOString(),
+                  }, { onConflict: "user_code" });
+                  setPalette([...(undoData?.color_palette ?? []), "", "", ""].slice(0, 3));
+                  setTypography(undoData?.typography ?? "");
+                  setImageStyle(undoData?.image_style ?? "");
+                  setSaveStatus("idle");
+                  setUndoData(undefined);
+                }} className="underline text-gray-400 hover:text-gray-600 ml-2 text-xs">desfazer</button>
+              )}
+            </span>
+          )}
+          <button onClick={() => setEditing(!editing)} className="text-xs font-medium text-[#1a6b5a] hover:underline">
+            {editing ? "Fechar" : "Editar"}
+          </button>
+        </div>
       </div>
 
-      <div className="flex flex-col gap-5">
-        {/* Paleta de Cores */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-gray-800">Paleta de Cores</label>
-          <p className="text-xs text-gray-400 -mt-1">Cores principais da identidade visual (hex).</p>
-          <div className="flex flex-col gap-2 mt-1">
-            {[0, 1, 2].map((i) => (
+      {/* Summary */}
+      {!editing && (
+        <div className="px-5 py-4">
+          {hasValues ? (
+            <div className="flex flex-col gap-2">
+              {cleanPalette.length > 0 && (
+                <div className="flex gap-2 items-center">
+                  {cleanPalette.map((cor, i) => (
+                    <div key={i} className="flex items-center gap-1.5">
+                      <div className="w-5 h-5 rounded-full border border-[#e8e8e4]" style={{ backgroundColor: cor }} />
+                      <span className="text-xs text-gray-400 font-mono">{cor}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex flex-wrap gap-1.5">
+                {typography && <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">{LABELS[typography] ?? typography}</span>}
+                {imageStyle && <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">{LABELS[imageStyle] ?? imageStyle}</span>}
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-300">Nenhum dado configurado ainda.</p>
+          )}
+        </div>
+      )}
+
+      {/* Edit mode */}
+      {editing && (
+        <div className="px-5 py-4 flex flex-col gap-4">
+          {/* Cores */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Paleta de cores</label>
+            {[0, 1, 2].map(i => (
               <div key={i} className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={palette[i] || "#ffffff"}
-                  onChange={(e) => updatePalette(i, e.target.value)}
-                  className="w-8 h-8 rounded cursor-pointer border border-[#e8e8e4]"
-                />
-                <input
-                  type="text"
-                  placeholder={`Cor ${i + 1} — ex: #1a6b5a`}
-                  value={palette[i] || ""}
-                  onChange={(e) => updatePalette(i, e.target.value)}
-                  className="flex-1 rounded-[8px] border border-[#e8e8e4] px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1a6b5a]/30 focus:border-[#1a6b5a] transition placeholder:text-gray-300"
-                />
+                <input type="color" value={palette[i] || "#ffffff"} onChange={e => updatePalette(i, e.target.value)}
+                  className="w-7 h-7 rounded cursor-pointer border border-[#e8e8e4]" />
+                <input type="text" placeholder={`Cor ${i + 1}`} value={palette[i] || ""}
+                  onChange={e => updatePalette(i, e.target.value)}
+                  className="flex-1 rounded-[8px] border border-[#e8e8e4] px-3 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1a6b5a]/30 focus:border-[#1a6b5a] transition placeholder:text-gray-300" />
               </div>
             ))}
           </div>
-        </div>
 
-        {/* Tipografia */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-gray-800">Tipografia</label>
-          <p className="text-xs text-gray-400 -mt-1">Estilo de fonte predominante na marca.</p>
-          <select
-            value={typography}
-            onChange={(e) => setTypography(e.target.value)}
-            className="w-full rounded-[8px] border border-[#e8e8e4] bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1a6b5a]/30 focus:border-[#1a6b5a] transition"
-          >
-            <option value="" disabled>Selecione...</option>
-            {TYPOGRAPHY_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-        </div>
+          {/* Tipografia */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Tipografia</label>
+            <div className="flex gap-1.5 flex-wrap">
+              {TYPOGRAPHY_OPTIONS.map(opt => (
+                <button key={opt} onClick={() => setTypography(opt === typography ? "" : opt)}
+                  className={`px-3 py-1.5 rounded-[8px] text-sm border transition ${
+                    typography === opt ? "border-[#1a6b5a] bg-[#f0f7f5] text-[#1a6b5a] font-medium" : "border-[#e8e8e4] text-gray-500 hover:bg-gray-50"
+                  }`}>
+                  {LABELS[opt]}
+                </button>
+              ))}
+            </div>
+          </div>
 
-        {/* Estilo de Imagem */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-gray-800">Estilo de Imagem</label>
-          <p className="text-xs text-gray-400 -mt-1">Estética visual das imagens e fotografias.</p>
-          <div className="grid grid-cols-2 gap-2">
-            {IMAGE_STYLE_OPTIONS.map((opt) => (
-              <label
-                key={opt.value}
-                className={`flex items-center gap-2 p-3 rounded-[8px] border cursor-pointer transition ${
-                  imageStyle === opt.value
-                    ? "border-[#1a6b5a] bg-[#f0f7f5]"
-                    : "border-[#e8e8e4] hover:bg-gray-50"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="image_style"
-                  value={opt.value}
-                  checked={imageStyle === opt.value}
-                  onChange={() => setImageStyle(opt.value)}
-                  className="accent-[#1a6b5a]"
-                />
-                <span className="text-sm text-gray-700">{opt.label}</span>
-              </label>
-            ))}
+          {/* Estilo de imagem */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Estilo de imagem</label>
+            <div className="flex gap-1.5 flex-wrap">
+              {IMAGE_STYLE_OPTIONS.map(opt => (
+                <button key={opt} onClick={() => setImageStyle(opt === imageStyle ? "" : opt)}
+                  className={`px-3 py-1.5 rounded-[8px] text-sm border transition ${
+                    imageStyle === opt ? "border-[#1a6b5a] bg-[#f0f7f5] text-[#1a6b5a] font-medium" : "border-[#e8e8e4] text-gray-500 hover:bg-gray-50"
+                  }`}>
+                  {LABELS[opt]}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-
-        <div className="pt-2 border-t border-[#e8e8e4] flex items-center gap-3">
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="px-5 py-2 rounded-[8px] bg-[#1a6b5a] text-white text-sm font-medium hover:bg-[#155a4a] transition disabled:opacity-60"
-          >
-            {saving ? "Salvando..." : "Salvar DNA Visual"}
-          </button>
-          {saved && (
-            <span className="text-sm text-[#1a6b5a] font-medium">✓ Salvo</span>
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
 }

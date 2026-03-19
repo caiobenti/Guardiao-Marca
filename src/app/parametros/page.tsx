@@ -55,26 +55,25 @@ export default async function ParametrosPage() {
     .maybeSingle();
 
   return (
-    <div className="min-h-screen bg-[#f9f9f7] py-10 px-6">
-      <div className="max-w-[760px] mx-auto flex flex-col gap-6">
+    <div className="min-h-screen bg-[#f9f9f7] py-8 px-6">
+      <div className="max-w-[900px] mx-auto flex flex-col gap-5">
 
         {/* Cabeçalho */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-            Parâmetros
-          </h1>
-          <p className="text-sm text-gray-400 mt-1">
-            Olá, <span className="text-gray-600 font-medium">{user.user_name}</span>
-            {" "}·{" "}
-            <span className="font-mono text-xs bg-gray-100 px-2 py-0.5 rounded">
-              {CURRENT_USER_CODE}
-            </span>
-          </p>
+        <div className="flex items-baseline justify-between">
+          <h1 className="text-xl font-bold text-gray-900 tracking-tight">Parâmetros</h1>
+          <span className="text-xs text-gray-400">
+            {user.user_name} ·{" "}
+            <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded">{CURRENT_USER_CODE}</span>
+          </span>
         </div>
 
-        {/* Componentes conectados ao DB */}
-        <VozEscrita data={brandParams ?? undefined} userCode={CURRENT_USER_CODE} />
-        <DNAVisual data={brandParams ?? undefined} userCode={CURRENT_USER_CODE} />
+        {/* Grid 2 colunas */}
+        <div className="grid grid-cols-2 gap-4">
+          <VozEscrita data={brandParams ?? undefined} userCode={CURRENT_USER_CODE} />
+          <DNAVisual data={brandParams ?? undefined} userCode={CURRENT_USER_CODE} />
+        </div>
+
+        {/* Bloco full-width */}
         <ICPCard data={icp ?? undefined} userCode={CURRENT_USER_CODE} />
 
       </div>
