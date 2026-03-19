@@ -30,9 +30,17 @@ export async function POST(req: NextRequest) {
   });
 
   if (!groqRes.ok) {
-    const err = await groqRes.text();
-    console.error("[api/gerar] Groq error:", err);
-    return NextResponse.json({ error: "Erro ao chamar a IA. Tente novamente." }, { status: 500 });
+    const errText = await groqRes.text();
+    console.error("[api/gerar] Groq error:", groqRes.status, errText);
+
+    // Tenta extrair mensagem legível do JSON de erro do Groq
+    let msg = `Status ${groqRes.status}`;
+    try {
+      const errJson = JSON.parse(errText);
+      msg = errJson?.error?.message ?? errJson?.message ?? msg;
+    } catch { /* mantém msg padrão */ }
+
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 
   const data = await groqRes.json();
