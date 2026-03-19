@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { createClient } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { DEFAULT_SYSTEM_PROMPT, DEFAULT_USER_TEMPLATE } from "@/lib/prompts";
 import { IAConfig } from "@/lib/types";
 
@@ -72,7 +72,6 @@ export default function ParametroIAClient({
 
   async function handleSave() {
     setSaving(true);
-    const supabase = createClient();
     const payload = {
       user_code: userCode,
       user_id:   userId,

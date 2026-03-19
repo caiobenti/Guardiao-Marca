@@ -1,12 +1,10 @@
-import { createClient } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { CURRENT_USER_CODE } from "@/lib/config";
 import ParametroIAClient from "@/components/parametro-ia/ParametroIAClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function ParametroIAPage() {
-  const supabase = createClient();
-
   // Get user from DB1
   const { data: user } = await supabase
     .from("DB1 - users")

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { CURRENT_USER_CODE } from "@/lib/config";
 import {
   buildSystemPrompt,
@@ -28,7 +28,6 @@ export async function POST(req: NextRequest) {
         : null);
 
     // Fetch ia_config from DB4 for model/temperature/tokens + optional custom prompts
-    const supabase = createClient();
     const { data: iaConfig } = await supabase
       .from("DB4 - ia_config")
       .select("*")
