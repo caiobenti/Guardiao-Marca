@@ -14,6 +14,8 @@
 //       as funções acima no momento da geração (via buildPromptFromTemplate).
 // ───────────────────────────────────────────────────────────────────────────
 
+import { ICPArchetype, BrandParameters } from "./types";
+
 // ─── Defaults editáveis via /parametro-ia ──────────────────────────────────
 // Estes textos são o ponto de partida do editor. O usuário pode modificá-los
 // livremente e salvar no banco — sem precisar alterar código.
@@ -104,8 +106,6 @@ export function buildTemplateVars(params: {
     dna_estilo_imagem: brandParams?.image_style ?? '',
   }
 }
-
-import { ICPArchetype, BrandParameters } from "./types";
 
 // ─── Contexto por canal ────────────────────────────────────────────────────
 // Define as regras de formato, tamanho e estilo de cada plataforma.
