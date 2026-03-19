@@ -25,15 +25,9 @@ export default async function ParametrosPage() {
           <h2 className="text-base font-semibold text-gray-900 mb-1">
             Usuário não encontrado
           </h2>
-          <p className="text-sm text-gray-400 mb-3">
+          <p className="text-sm text-gray-400">
             O código <span className="font-mono text-gray-600">{CURRENT_USER_CODE}</span> não existe na base de dados.
           </p>
-          {/* DEBUG TEMPORÁRIO — remover depois */}
-          <div className="text-left bg-gray-50 rounded p-3 text-xs font-mono text-gray-500 break-all">
-            <p><b>URL:</b> {process.env.NEXT_PUBLIC_SUPABASE_URL ?? "❌ não definida"}</p>
-            <p><b>KEY:</b> {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "✓ definida" : "❌ não definida"}</p>
-            <p><b>Erro:</b> {userError?.message ?? "sem erro (retornou vazio)"}</p>
-          </div>
         </div>
       </div>
     );
