@@ -7,7 +7,103 @@
 //   buildSystemPrompt(brandParams) → instrui a IA sobre identidade da marca
 //   buildUserPrompt(params)        → monta o briefing específico de cada geração
 //   CANAL_CONTEXT                  → orientações de formato por canal
+//
+//   DEFAULT_SYSTEM_PROMPT / DEFAULT_USER_TEMPLATE
+//     → texto padrão mostrado no editor de /parametro-ia.
+//     → Se o usuário salvar um template customizado no DB4, ele substitui
+//       as funções acima no momento da geração (via buildPromptFromTemplate).
 // ───────────────────────────────────────────────────────────────────────────
+
+// ─── Defaults editáveis via /parametro-ia ──────────────────────────────────
+// Estes textos são o ponto de partida do editor. O usuário pode modificá-los
+// livremente e salvar no banco — sem precisar alterar código.
+
+export const DEFAULT_SYSTEM_PROMPT = `Você é o Guardião da Marca — um especialista em comunicação estratégica e copywriting responsável por criar conteúdos que refletem com precisão a identidade, a voz e os valores da marca.
+
+Seu papel é entregar conteúdos prontos para publicação, sem introduções desnecessárias, sem explicações sobre o que fez, e sem metadados. Apenas o conteúdo.
+
+VOZ DA MARCA:
+- Tom: {{voz_tom}}
+- Personalidade: {{voz_personalidade}}
+- Linguagem: {{voz_linguagem}}
+- Arquétipo: {{voz_arquetipo}}
+- Palavras-chave: {{voz_keywords}}
+- Palavras proibidas: {{voz_avoid}}
+
+DNA VISUAL (contexto):
+- Cores principais: {{dna_cores}}
+- Tipografia: {{dna_tipografia}}
+- Estilo de imagem: {{dna_estilo_imagem}}
+
+REGRAS ABSOLUTAS:
+- Nunca use clichês ou frases genéricas ("No mundo de hoje...", "Em um mercado competitivo...").
+- Respeite rigorosamente as regras de formato do canal informado no briefing.
+- Se houver persona definida, escreva diretamente para ela.
+- Entregue o conteúdo completo. Nunca trunque com "...".`
+
+export const DEFAULT_USER_TEMPLATE = `## Briefing de conteúdo
+
+**Canal:** {{canal}}
+**Formato:** {{formato}}
+**Estilo de mídia:** {{estilo}}
+
+## Persona-alvo
+Nome: {{persona_nome}}
+Principais dores: {{persona_dores}}
+O que mais valoriza: {{persona_valor}}
+
+## Objetivo da mensagem
+{{objetivo}}
+
+## Tema / Assunto
+{{tema}}
+
+---
+Crie o conteúdo agora. Entregue direto, sem preâmbulos.`
+
+// ─── Template engine ───────────────────────────────────────────────────────
+// Substitui {{variavel}} pelo valor correspondente no objeto vars.
+// Variáveis não encontradas ficam como {{variavel}} — visível para debug.
+
+export function buildPromptFromTemplate(
+  template: string,
+  vars: Record<string, string>
+): string {
+  return template.replace(/\{\{(\w+)\}\}/g, (_, key) => vars[key] ?? `{{${key}}}`)
+}
+
+// ─── Mapa de variáveis a partir dos dados do formulário e da marca ─────────
+
+export function buildTemplateVars(params: {
+  canal: string
+  formato: string
+  estilo: string
+  objetivo: string
+  tema: string
+  persona: ICPArchetype | null
+  brandParams: Partial<BrandParameters> | null
+}): Record<string, string> {
+  const { canal, formato, estilo, objetivo, tema, persona, brandParams } = params
+  return {
+    canal,
+    formato,
+    estilo,
+    objetivo,
+    tema,
+    persona_nome: persona?.icp_name ?? '',
+    persona_dores: (persona?.pain_points ?? []).join(', '),
+    persona_valor: (persona?.value_prop ?? []).join(', '),
+    voz_tom: brandParams?.emotional_tone ?? '',
+    voz_personalidade: '',
+    voz_linguagem: brandParams?.formality_level ?? '',
+    voz_arquetipo: '',
+    voz_keywords: brandParams?.brand_keywords ?? '',
+    voz_avoid: '',
+    dna_cores: (brandParams?.color_palette ?? []).join(', '),
+    dna_tipografia: brandParams?.typography ?? '',
+    dna_estilo_imagem: brandParams?.image_style ?? '',
+  }
+}
 
 import { ICPArchetype, BrandParameters } from "./types";
 

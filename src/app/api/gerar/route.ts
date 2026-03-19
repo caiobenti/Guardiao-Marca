@@ -1,50 +1,120 @@
 import { NextRequest, NextResponse } from "next/server";
-import { buildSystemPrompt, buildUserPrompt, UserPromptParams } from "@/lib/prompts";
-import { BrandParameters } from "@/lib/types";
+import { createClient } from "@/lib/supabase";
+import { CURRENT_USER_CODE } from "@/lib/config";
+import {
+  buildSystemPrompt,
+  buildUserPrompt,
+  buildPromptFromTemplate,
+  buildTemplateVars,
+  UserPromptParams,
+} from "@/lib/prompts";
+import { BrandParameters, ICPArchetype } from "@/lib/types";
 
 interface GerarRequest extends UserPromptParams {
   brandParams?: Partial<BrandParameters>;
+  personaId?: string;
+  icps?: ICPArchetype[];
 }
 
 export async function POST(req: NextRequest) {
-  const body: GerarRequest = await req.json();
+  try {
+    const body: GerarRequest = await req.json();
 
-  const systemPrompt = buildSystemPrompt(body.brandParams);
-  const userPrompt   = buildUserPrompt(body);
+    // Resolve persona from icps list if personaId was passed
+    const persona: ICPArchetype | null =
+      body.persona ??
+      (body.icps && body.personaId
+        ? (body.icps.find((p) => p.id === body.personaId) ?? null)
+        : null);
 
-  const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user",   content: userPrompt   },
-      ],
-      temperature: 0.72,
-      max_tokens: 2048,
-    }),
-  });
+    // Fetch ia_config from DB4 for model/temperature/tokens + optional custom prompts
+    const supabase = createClient();
+    const { data: iaConfig } = await supabase
+      .from("DB4 - ia_config")
+      .select("*")
+      .eq("user_code", CURRENT_USER_CODE)
+      .maybeSingle();
 
-  if (!groqRes.ok) {
-    const errText = await groqRes.text();
-    console.error("[api/gerar] Groq error:", groqRes.status, errText);
+    const model       = iaConfig?.model       || "llama-3.3-70b-versatile";
+    const temperature = iaConfig?.temperature ?? 0.72;
+    const maxTokens   = iaConfig?.max_tokens  ?? 2048;
 
-    // Tenta extrair mensagem legível do JSON de erro do Groq
-    let msg = `Status ${groqRes.status}`;
-    try {
-      const errJson = JSON.parse(errText);
-      msg = errJson?.error?.message ?? errJson?.message ?? msg;
-    } catch { /* mantém msg padrão */ }
+    // Build prompts: use DB4 custom template if saved, otherwise built-in functions
+    let systemPrompt: string;
+    let userPrompt: string;
 
-    return NextResponse.json({ error: msg }, { status: 500 });
+    if (iaConfig?.system_prompt || iaConfig?.user_template) {
+      const vars = buildTemplateVars({
+        canal:       body.canal,
+        formato:     body.formato,
+        estilo:      body.estilo,
+        objetivo:    body.objetivo,
+        tema:        body.tema,
+        persona,
+        brandParams: body.brandParams ?? null,
+      });
+      systemPrompt = buildPromptFromTemplate(
+        iaConfig?.system_prompt || "",
+        vars
+      );
+      userPrompt = buildPromptFromTemplate(
+        iaConfig?.user_template || "",
+        vars
+      );
+    } else {
+      // fallback: built-in rich prompt functions
+      systemPrompt = buildSystemPrompt(body.brandParams);
+      userPrompt   = buildUserPrompt({ ...body, persona });
+    }
+
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: "GROQ_API_KEY não configurada no servidor" },
+        { status: 500 }
+      );
+    }
+
+    const groqRes = await fetch(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          temperature,
+          max_tokens: maxTokens,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user",   content: userPrompt   },
+          ],
+        }),
+      }
+    );
+
+    if (!groqRes.ok) {
+      const errText = await groqRes.text();
+      console.error("[api/gerar] Groq error:", groqRes.status, errText);
+
+      let msg = `Status ${groqRes.status}`;
+      try {
+        const errJson = JSON.parse(errText);
+        msg = errJson?.error?.message ?? errJson?.message ?? msg;
+      } catch { /* mantém msg padrão */ }
+
+      return NextResponse.json({ error: msg }, { status: 500 });
+    }
+
+    const data = await groqRes.json();
+    const content: string = data.choices?.[0]?.message?.content ?? "";
+
+    return NextResponse.json({ content });
+  } catch (err: unknown) {
+    console.error("[api/gerar] error:", err);
+    const message = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  const data = await groqRes.json();
-  const content: string = data.choices?.[0]?.message?.content ?? "";
-
-  return NextResponse.json({ content });
 }

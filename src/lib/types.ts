@@ -37,3 +37,14 @@ export interface ICPArchetype {
   update_at: string;
   inactivated_at: string | null;
 }
+
+export interface IAConfig {
+  id?: string;
+  user_code: string;
+  user_id: string;
+  system_prompt: string;
+  user_template: string;
+  model: string;
+  temperature: number;
+  max_tokens: number;
+}

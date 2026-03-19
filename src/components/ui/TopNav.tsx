@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const navItems = [
   { href: "/criar", label: "Criar Conteúdo" },
   { href: "/parametros", label: "Parâmetros" },
+  { href: "/parametro-ia", label: "Parâmetro IA" },
 ];
 
 export function TopNav() {
