@@ -1,20 +1,20 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { supabase } from "@/lib/supabase";
+import { useState, useRef } from "react";
+import { saveRecord } from "@/lib/db";
 import { BrandParameters } from "@/lib/types";
 
 // ─── Opções ────────────────────────────────────────────────────────────────
 const TYPOGRAPHY_OPTIONS = ["serif", "sans-serif", "monospace", "display"];
 const IMAGE_STYLE_OPTIONS = ["clean", "bold", "organic", "minimal"];
 
-const LABELS: Record<string, string> = {
+const VALUE_LABELS: Record<string, string> = {
   serif: "Serif", "sans-serif": "Sans-serif", monospace: "Monospace", display: "Display",
   clean: "Clean", bold: "Bold", organic: "Organic", minimal: "Minimal",
 };
 
 // ─── Tipos ─────────────────────────────────────────────────────────────────
-type SaveStatus = "idle" | "pending" | "saving" | "saved" | "error";
+type SaveStatus = "idle" | "saving" | "saved" | "error";
 
 interface Props {
   data?: Partial<BrandParameters>;
@@ -23,70 +23,30 @@ interface Props {
 
 // ─── Componente ────────────────────────────────────────────────────────────
 export function DNAVisual({ data, userCode }: Props) {
-  const initialPalette = data?.color_palette ?? [];
   const [palette, setPalette] = useState<string[]>(
-    [...initialPalette, "", "", ""].slice(0, 3)
+    [...(data?.color_palette ?? []), "", "", ""].slice(0, 3)
   );
   const [typography, setTypography] = useState(data?.typography ?? "");
   const [imageStyle, setImageStyle] = useState(data?.image_style ?? "");
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
-  const isFirstRender = useRef(true);
+  const isSaving = useRef(false);
 
-  // Auto-save com debounce — não roda no mount
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
+  // ─── Save ───────────────────────────────────────────────────────────────
+  async function handleSave() {
+    if (isSaving.current) return;
+    isSaving.current = true;
+    setSaveStatus("saving");
 
-    setSaveStatus("pending");
+    const { error } = await saveRecord("DB2 - brand_parameters", "user_code", userCode, {
+      user_code: userCode,
+      color_palette: palette.filter(c => c.trim() !== ""),
+      typography,
+      image_style: imageStyle,
+    });
 
-    const timer = setTimeout(async () => {
-      setSaveStatus("saving");
-
-      const { error } = await supabase.from("DB2 - brand_parameters").upsert(
-        {
-          user_code: userCode,
-          color_palette: palette.filter(c => c.trim() !== ""),
-          typography,
-          image_style: imageStyle,
-          update_at: new Date().toISOString(),
-        },
-        { onConflict: "user_code" }
-      );
-
-      if (error) {
-        console.error("[DNAVisual] Erro ao salvar:", error.message);
-        setSaveStatus("error");
-        return;
-      }
-
-      setSaveStatus("saved");
-      setTimeout(() => setSaveStatus("idle"), 3000);
-    }, 1500);
-
-    return () => clearTimeout(timer);
-  }, [palette, typography, imageStyle, userCode]);
-
-  // Atualizar: busca dados frescos do banco
-  async function handleRefresh() {
-    const { data: fresh, error } = await supabase
-      .from("DB2 - brand_parameters")
-      .select("*")
-      .eq("user_code", userCode)
-      .maybeSingle();
-
-    if (error) {
-      console.error("[DNAVisual] Erro ao atualizar:", error.message);
-      return;
-    }
-
-    if (fresh) {
-      isFirstRender.current = true;
-      setPalette([...(fresh.color_palette ?? []), "", "", ""].slice(0, 3));
-      setTypography(fresh.typography ?? "");
-      setImageStyle(fresh.image_style ?? "");
-    }
+    isSaving.current = false;
+    setSaveStatus(error ? "error" : "saved");
+    setTimeout(() => setSaveStatus("idle"), 3000);
   }
 
   function updatePalette(index: number, value: string) {
@@ -95,6 +55,7 @@ export function DNAVisual({ data, userCode }: Props) {
     setPalette(next);
   }
 
+  // ─── Render ────────────────────────────────────────────────────────────
   return (
     <div className="bg-white rounded-[10px] border border-[#e8e8e4]" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
 
@@ -102,12 +63,15 @@ export function DNAVisual({ data, userCode }: Props) {
       <div className="flex items-center justify-between px-5 py-4 border-b border-[#e8e8e4]">
         <h2 className="text-sm font-semibold text-gray-900">DNA Visual</h2>
         <div className="flex items-center gap-3">
-          {saveStatus === "pending" && <span className="text-xs text-amber-500">● não salvo</span>}
           {saveStatus === "saving" && <span className="text-xs text-gray-400">Salvando...</span>}
-          {saveStatus === "saved" && <span className="text-xs text-[#1a6b5a]">✓ Salvo</span>}
-          {saveStatus === "error" && <span className="text-xs text-red-500">Erro ao salvar</span>}
-          <button onClick={handleRefresh} className="text-xs font-medium text-[#1a6b5a] hover:underline">
-            Atualizar
+          {saveStatus === "saved"  && <span className="text-xs text-[#1a6b5a]">✓ Salvo</span>}
+          {saveStatus === "error"  && <span className="text-xs text-red-500">Erro ao salvar</span>}
+          <button
+            onClick={handleSave}
+            disabled={saveStatus === "saving"}
+            className="text-xs font-medium px-3 py-1.5 rounded-[8px] bg-[#1a6b5a] text-white hover:bg-[#155a4a] transition disabled:opacity-50"
+          >
+            Salvar
           </button>
         </div>
       </div>
@@ -151,7 +115,7 @@ export function DNAVisual({ data, userCode }: Props) {
                     : "border-[#e8e8e4] text-gray-500 hover:bg-gray-50"
                 }`}
               >
-                {LABELS[opt]}
+                {VALUE_LABELS[opt]}
               </button>
             ))}
           </div>
@@ -171,7 +135,7 @@ export function DNAVisual({ data, userCode }: Props) {
                     : "border-[#e8e8e4] text-gray-500 hover:bg-gray-50"
                 }`}
               >
-                {LABELS[opt]}
+                {VALUE_LABELS[opt]}
               </button>
             ))}
           </div>

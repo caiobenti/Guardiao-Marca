@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { ICPArchetype } from "@/lib/types";
 
 // ─── Tipos ─────────────────────────────────────────────────────────────────
-type SaveStatus = "idle" | "pending" | "saving" | "saved" | "error";
+type SaveStatus = "idle" | "saving" | "saved" | "error";
 
 interface ICPItemProps {
   icp: ICPArchetype;
@@ -26,43 +26,33 @@ function ICPItem({ icp, userCode }: ICPItemProps) {
   const [painInput, setPainInput] = useState("");
   const [valuePropInput, setValuePropInput] = useState("");
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
-  const isFirstRender = useRef(true);
+  const isSaving = useRef(false);
 
-  // Auto-save com debounce — não roda no mount
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
+  // ─── Save ───────────────────────────────────────────────────────────────
+  async function handleSave() {
+    if (isSaving.current) return;
+    isSaving.current = true;
+    setSaveStatus("saving");
+
+    const { error } = await supabase
+      .from("DB3 - icp_archetypes")
+      .update({
+        icp_name: icpName,
+        pain_points: painPoints,
+        value_prop: valueProps,
+        status,
+        update_at: new Date().toISOString(),
+      })
+      .eq("id", icp.id);
+
+    if (error) {
+      console.error(`[ICPItem id=${icp.id}] Erro ao salvar:`, error.message);
     }
 
-    setSaveStatus("pending");
-
-    const timer = setTimeout(async () => {
-      setSaveStatus("saving");
-
-      const { error } = await supabase
-        .from("DB3 - icp_archetypes")
-        .update({
-          icp_name: icpName,
-          pain_points: painPoints,
-          value_prop: valueProps,
-          status,
-          update_at: new Date().toISOString(),
-        })
-        .eq("id", icp.id);
-
-      if (error) {
-        console.error(`[ICPItem id=${icp.id}] Erro ao salvar:`, error.message);
-        setSaveStatus("error");
-        return;
-      }
-
-      setSaveStatus("saved");
-      setTimeout(() => setSaveStatus("idle"), 3000);
-    }, 1500);
-
-    return () => clearTimeout(timer);
-  }, [icpName, painPoints, valueProps, status, icp.id, userCode]);
+    isSaving.current = false;
+    setSaveStatus(error ? "error" : "saved");
+    setTimeout(() => setSaveStatus("idle"), 3000);
+  }
 
   function addItem(
     list: string[],
@@ -92,10 +82,9 @@ function ICPItem({ icp, userCode }: ICPItemProps) {
           className="text-sm font-medium text-gray-800 bg-transparent border-none outline-none flex-1 placeholder:text-gray-300"
         />
         <div className="flex items-center gap-3 shrink-0">
-          {saveStatus === "pending" && <span className="text-xs text-amber-500">● não salvo</span>}
           {saveStatus === "saving" && <span className="text-xs text-gray-400">Salvando...</span>}
-          {saveStatus === "saved" && <span className="text-xs text-[#1a6b5a]">✓ Salvo</span>}
-          {saveStatus === "error" && <span className="text-xs text-red-500">Erro</span>}
+          {saveStatus === "saved"  && <span className="text-xs text-[#1a6b5a]">✓ Salvo</span>}
+          {saveStatus === "error"  && <span className="text-xs text-red-500">Erro</span>}
           {/* Status toggle */}
           <div className="flex gap-1">
             {["ativo", "inativo"].map(s => (
@@ -114,6 +103,13 @@ function ICPItem({ icp, userCode }: ICPItemProps) {
               </button>
             ))}
           </div>
+          <button
+            onClick={handleSave}
+            disabled={saveStatus === "saving"}
+            className="text-xs font-medium px-3 py-1.5 rounded-[8px] bg-[#1a6b5a] text-white hover:bg-[#155a4a] transition disabled:opacity-50"
+          >
+            Salvar
+          </button>
         </div>
       </div>
 
