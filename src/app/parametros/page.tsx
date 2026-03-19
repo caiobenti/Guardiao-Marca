@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { supabase } from "@/lib/supabase";
 import { CURRENT_USER_CODE } from "@/lib/config";
 import { VozEscrita } from "@/components/parametros/VozEscrita";
