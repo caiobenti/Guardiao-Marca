@@ -10,15 +10,17 @@ type SaveStatus = "idle" | "saving" | "saved" | "error";
 interface ICPItemProps {
   icp: ICPArchetype;
   userCode: string;
+  userId: string;
 }
 
 interface Props {
   data: ICPArchetype[];
   userCode: string;
+  userId: string;
 }
 
 // ─── Item individual de ICP ────────────────────────────────────────────────
-function ICPItem({ icp, userCode }: ICPItemProps) {
+function ICPItem({ icp, userCode, userId }: ICPItemProps) {
   const [icpName, setIcpName] = useState(icp.icp_name ?? "");
   const [painPoints, setPainPoints] = useState<string[]>(icp.pain_points ?? []);
   const [valueProps, setValueProps] = useState<string[]>(icp.value_prop ?? []);
@@ -37,6 +39,7 @@ function ICPItem({ icp, userCode }: ICPItemProps) {
     const { error } = await supabase
       .from("DB3 - icp_archetypes")
       .update({
+        user_id: userId,
         icp_name: icpName,
         pain_points: painPoints,
         value_prop: valueProps,
@@ -184,7 +187,7 @@ function ICPItem({ icp, userCode }: ICPItemProps) {
 }
 
 // ─── Lista de ICPs ─────────────────────────────────────────────────────────
-export function ICPCard({ data, userCode }: Props) {
+export function ICPCard({ data, userCode, userId }: Props) {
   const [icps, setIcps] = useState<ICPArchetype[]>(data);
   const [creating, setCreating] = useState(false);
 
@@ -212,6 +215,7 @@ export function ICPCard({ data, userCode }: Props) {
       .from("DB3 - icp_archetypes")
       .insert({
         user_code: userCode,
+        user_id: userId,
         icp_name: "Nova Persona",
         pain_points: [],
         value_prop: [],
@@ -263,7 +267,7 @@ export function ICPCard({ data, userCode }: Props) {
           </p>
         ) : (
           icps.map(icp => (
-            <ICPItem key={icp.id} icp={icp} userCode={userCode} />
+            <ICPItem key={icp.id} icp={icp} userCode={userCode} userId={userId} />
           ))
         )}
       </div>

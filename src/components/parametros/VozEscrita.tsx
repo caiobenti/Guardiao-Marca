@@ -35,10 +35,11 @@ type SaveStatus = "idle" | "saving" | "saved" | "error";
 interface Props {
   data?: Partial<BrandParameters>;
   userCode: string;
+  userId: string;
 }
 
 // ─── Componente ────────────────────────────────────────────────────────────
-export function VozEscrita({ data, userCode }: Props) {
+export function VozEscrita({ data, userCode, userId }: Props) {
   const [sentenceLength, setSentenceLength] = useState(data?.sentence_length ?? "");
   const [formalityLevel, setFormalityLevel] = useState(data?.formality_level ?? "");
   const [jargonLevel, setJargonLevel] = useState(data?.jargon_level ?? "");
@@ -51,7 +52,47 @@ export function VozEscrita({ data, userCode }: Props) {
   );
   const [keywordInput, setKeywordInput] = useState("");
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const [isDirty, setIsDirty] = useState(false);
   const isSaving = useRef(false);
+  const isFirstRender = useRef(true);
+
+  function markDirty() {
+    if (isFirstRender.current) return;
+    setIsDirty(true);
+  }
+
+  // Flip isFirstRender after mount
+  if (isFirstRender.current) {
+    // Will be set to false after first interaction via useEffect pattern
+    // We use a workaround: flag flips after the first setter call
+  }
+
+  function makeSetter<T>(setter: (v: T) => void) {
+    return (v: T) => {
+      if (isFirstRender.current) {
+        isFirstRender.current = false;
+      }
+      setter(v);
+      setIsDirty(true);
+    };
+  }
+
+  const setSD = makeSetter(setSentenceLength);
+  const setFL = makeSetter(setFormalityLevel);
+  const setJL = makeSetter(setJargonLevel);
+  const setET = makeSetter(setEmotionalTone);
+  const setCI = makeSetter(setCtaIntensity);
+
+  function settersForField(field: string): (v: string) => void {
+    const map: Record<string, (v: string) => void> = {
+      sentence_length: setSD,
+      formality_level: setFL,
+      jargon_level: setJL,
+      emotional_tone: setET,
+      cta_intensity: setCI,
+    };
+    return map[field];
+  }
 
   // ─── Save ───────────────────────────────────────────────────────────────
   async function handleSave() {
@@ -61,6 +102,7 @@ export function VozEscrita({ data, userCode }: Props) {
 
     const { error } = await saveRecord("DB2 - brand_parameters", "user_code", userCode, {
       user_code: userCode,
+      user_id: userId,
       sentence_length: sentenceLength,
       formality_level: formalityLevel,
       jargon_level: jargonLevel,
@@ -71,13 +113,18 @@ export function VozEscrita({ data, userCode }: Props) {
 
     isSaving.current = false;
     setSaveStatus(error ? "error" : "saved");
+    if (!error) setIsDirty(false);
     setTimeout(() => setSaveStatus("idle"), 3000);
   }
 
   // ─── Keywords ──────────────────────────────────────────────────────────
   function addKeyword() {
     const kw = keywordInput.trim();
-    if (kw && !keywords.includes(kw)) setKeywords([...keywords, kw]);
+    if (kw && !keywords.includes(kw)) {
+      isFirstRender.current = false;
+      setKeywords([...keywords, kw]);
+      setIsDirty(true);
+    }
     setKeywordInput("");
   }
 
@@ -90,14 +137,6 @@ export function VozEscrita({ data, userCode }: Props) {
     cta_intensity: ctaIntensity,
   };
 
-  const setters: Record<string, (v: string) => void> = {
-    sentence_length: setSentenceLength,
-    formality_level: setFormalityLevel,
-    jargon_level: setJargonLevel,
-    emotional_tone: setEmotionalTone,
-    cta_intensity: setCtaIntensity,
-  };
-
   return (
     <div className="bg-white rounded-[10px] border border-[#e8e8e4]" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
 
@@ -105,6 +144,9 @@ export function VozEscrita({ data, userCode }: Props) {
       <div className="flex items-center justify-between px-5 py-4 border-b border-[#e8e8e4]">
         <h2 className="text-sm font-semibold text-gray-900">Voz e Escrita</h2>
         <div className="flex items-center gap-3">
+          {isDirty && saveStatus === "idle" && (
+            <span className="text-xs text-amber-500">● alterações não salvas</span>
+          )}
           {saveStatus === "saving" && <span className="text-xs text-gray-400">Salvando...</span>}
           {saveStatus === "saved"  && <span className="text-xs text-[#1a6b5a]">✓ Salvo</span>}
           {saveStatus === "error"  && <span className="text-xs text-red-500">Erro ao salvar</span>}
@@ -133,7 +175,7 @@ export function VozEscrita({ data, userCode }: Props) {
                 return (
                   <button
                     key={opt}
-                    onClick={() => setters[field](isActive ? "" : opt)}
+                    onClick={() => settersForField(field)(isActive ? "" : opt)}
                     className={`px-3 py-1.5 rounded-[8px] text-sm border transition ${
                       isActive
                         ? "border-[#1a6b5a] bg-[#f0f7f5] text-[#1a6b5a] font-medium"
@@ -172,7 +214,16 @@ export function VozEscrita({ data, userCode }: Props) {
               {keywords.map(kw => (
                 <span key={kw} className="flex items-center gap-1 text-sm bg-[#f0f7f5] text-[#1a6b5a] px-2.5 py-1 rounded-full">
                   {kw}
-                  <button onClick={() => setKeywords(keywords.filter(k => k !== kw))} className="opacity-50 hover:opacity-100 leading-none ml-0.5">×</button>
+                  <button
+                    onClick={() => {
+                      isFirstRender.current = false;
+                      setKeywords(keywords.filter(k => k !== kw));
+                      setIsDirty(true);
+                    }}
+                    className="opacity-50 hover:opacity-100 leading-none ml-0.5"
+                  >
+                    ×
+                  </button>
                 </span>
               ))}
             </div>

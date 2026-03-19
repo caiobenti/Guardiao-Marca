@@ -68,12 +68,12 @@ export default async function ParametrosPage() {
 
         {/* Grid 2 colunas */}
         <div className="grid grid-cols-2 gap-4">
-          <VozEscrita data={brandParams ?? undefined} userCode={CURRENT_USER_CODE} />
-          <DNAVisual data={brandParams ?? undefined} userCode={CURRENT_USER_CODE} />
+          <VozEscrita data={brandParams ?? undefined} userCode={CURRENT_USER_CODE} userId={user.user_id} />
+          <DNAVisual data={brandParams ?? undefined} userCode={CURRENT_USER_CODE} userId={user.user_id} />
         </div>
 
         {/* Bloco full-width */}
-        <ICPCard data={icps ?? []} userCode={CURRENT_USER_CODE} />
+        <ICPCard data={icps ?? []} userCode={CURRENT_USER_CODE} userId={user.user_id} />
 
       </div>
     </div>

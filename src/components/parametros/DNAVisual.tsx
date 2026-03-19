@@ -19,17 +19,25 @@ type SaveStatus = "idle" | "saving" | "saved" | "error";
 interface Props {
   data?: Partial<BrandParameters>;
   userCode: string;
+  userId: string;
 }
 
 // ─── Componente ────────────────────────────────────────────────────────────
-export function DNAVisual({ data, userCode }: Props) {
+export function DNAVisual({ data, userCode, userId }: Props) {
   const [palette, setPalette] = useState<string[]>(
     [...(data?.color_palette ?? []), "", "", ""].slice(0, 3)
   );
   const [typography, setTypography] = useState(data?.typography ?? "");
   const [imageStyle, setImageStyle] = useState(data?.image_style ?? "");
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const [isDirty, setIsDirty] = useState(false);
   const isSaving = useRef(false);
+  const isFirstRender = useRef(true);
+
+  function markDirty() {
+    isFirstRender.current = false;
+    setIsDirty(true);
+  }
 
   // ─── Save ───────────────────────────────────────────────────────────────
   async function handleSave() {
@@ -39,6 +47,7 @@ export function DNAVisual({ data, userCode }: Props) {
 
     const { error } = await saveRecord("DB2 - brand_parameters", "user_code", userCode, {
       user_code: userCode,
+      user_id: userId,
       color_palette: palette.filter(c => c.trim() !== ""),
       typography,
       image_style: imageStyle,
@@ -46,13 +55,16 @@ export function DNAVisual({ data, userCode }: Props) {
 
     isSaving.current = false;
     setSaveStatus(error ? "error" : "saved");
+    if (!error) setIsDirty(false);
     setTimeout(() => setSaveStatus("idle"), 3000);
   }
 
   function updatePalette(index: number, value: string) {
+    isFirstRender.current = false;
     const next = [...palette];
     next[index] = value;
     setPalette(next);
+    setIsDirty(true);
   }
 
   // ─── Render ────────────────────────────────────────────────────────────
@@ -63,6 +75,9 @@ export function DNAVisual({ data, userCode }: Props) {
       <div className="flex items-center justify-between px-5 py-4 border-b border-[#e8e8e4]">
         <h2 className="text-sm font-semibold text-gray-900">DNA Visual</h2>
         <div className="flex items-center gap-3">
+          {isDirty && saveStatus === "idle" && (
+            <span className="text-xs text-amber-500">● alterações não salvas</span>
+          )}
           {saveStatus === "saving" && <span className="text-xs text-gray-400">Salvando...</span>}
           {saveStatus === "saved"  && <span className="text-xs text-[#1a6b5a]">✓ Salvo</span>}
           {saveStatus === "error"  && <span className="text-xs text-red-500">Erro ao salvar</span>}
@@ -108,7 +123,10 @@ export function DNAVisual({ data, userCode }: Props) {
             {TYPOGRAPHY_OPTIONS.map(opt => (
               <button
                 key={opt}
-                onClick={() => setTypography(opt === typography ? "" : opt)}
+                onClick={() => {
+                  markDirty();
+                  setTypography(opt === typography ? "" : opt);
+                }}
                 className={`px-3 py-1.5 rounded-[8px] text-sm border transition ${
                   typography === opt
                     ? "border-[#1a6b5a] bg-[#f0f7f5] text-[#1a6b5a] font-medium"
@@ -128,7 +146,10 @@ export function DNAVisual({ data, userCode }: Props) {
             {IMAGE_STYLE_OPTIONS.map(opt => (
               <button
                 key={opt}
-                onClick={() => setImageStyle(opt === imageStyle ? "" : opt)}
+                onClick={() => {
+                  markDirty();
+                  setImageStyle(opt === imageStyle ? "" : opt);
+                }}
                 className={`px-3 py-1.5 rounded-[8px] text-sm border transition ${
                   imageStyle === opt
                     ? "border-[#1a6b5a] bg-[#f0f7f5] text-[#1a6b5a] font-medium"
