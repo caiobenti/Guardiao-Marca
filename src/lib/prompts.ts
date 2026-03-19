@@ -250,3 +250,25 @@ ${canalCtx}
 Crie o conteúdo agora. Entregue direto, sem preâmbulos.
 `.trim();
 }
+
+export function buildImagePrompt(params: {
+  canal: string
+  tema: string
+  objetivo: string
+  persona: ICPArchetype | null
+  brandParams: Partial<BrandParameters> | null
+}): string {
+  const { canal, tema, objetivo, persona, brandParams } = params
+  const parts = [
+    `Professional marketing visual for ${canal}.`,
+    tema ? `Theme: ${tema}.` : '',
+    objetivo ? `Goal: ${objetivo}.` : '',
+    persona?.icp_name ? `Target audience: ${persona.icp_name}.` : '',
+    brandParams?.image_style ? `Visual style: ${brandParams.image_style}.` : '',
+    brandParams?.color_palette?.length
+      ? `Brand colors: ${brandParams.color_palette.join(', ')}.`
+      : '',
+    'Clean, high quality, modern design. No text overlays.',
+  ].filter(Boolean)
+  return parts.join(' ')
+}

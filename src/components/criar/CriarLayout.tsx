@@ -21,33 +21,54 @@ export function CriarLayout({ icps, brandParams }: Props) {
   const [tema, setTema]           = useState("");
 
   // ── Output ──────────────────────────────────────────────────────────────
-  const [output, setOutput]           = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [genError, setGenError]         = useState("");
+  const [outputTexto, setOutputTexto]     = useState("");
+  const [outputImagem, setOutputImagem]   = useState(""); // base64 data URL
+  const [loadingTexto, setLoadingTexto]   = useState(false);
+  const [loadingImagem, setLoadingImagem] = useState(false);
+  const [erroTexto, setErroTexto]         = useState("");
+  const [erroImagem, setErroImagem]       = useState("");
 
   const canGenerate = canal.trim() !== "" && tema.trim() !== "";
+  const isGenerating = loadingTexto || loadingImagem;
 
   async function handleGerar() {
     if (!canGenerate || isGenerating) return;
-    setIsGenerating(true);
-    setOutput("");
-    setGenError("");
+    setOutputTexto(""); setOutputImagem(""); setErroTexto(""); setErroImagem("");
 
     const persona = icps.find(i => i.id === personaId) ?? null;
+    const gerarTexto = estilo !== "Só imagem";
+    const gerarImagem = estilo === "Só imagem" || estilo === "Texto e imagem";
 
-    const res = await fetch("/api/gerar", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ persona, canal, formato, estilo, objetivo, tema, brandParams }),
-    });
+    if (gerarTexto) {
+      setLoadingTexto(true);
+      fetch("/api/gerar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ persona, canal, formato, estilo, objetivo, tema, brandParams }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.error) setErroTexto(data.error);
+          else setOutputTexto(data.content ?? "");
+        })
+        .catch(e => setErroTexto(e.message))
+        .finally(() => setLoadingTexto(false));
+    }
 
-    const data = await res.json();
-    setIsGenerating(false);
-
-    if (!res.ok || data.error) {
-      setGenError(data.error ?? "Erro desconhecido.");
-    } else {
-      setOutput(data.content ?? "");
+    if (gerarImagem) {
+      setLoadingImagem(true);
+      fetch("/api/gerar-imagem", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ canal, tema, objetivo, persona, brandParams }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.error) setErroImagem(data.error);
+          else setOutputImagem(data.imageUrl ?? "");
+        })
+        .catch(e => setErroImagem(e.message))
+        .finally(() => setLoadingImagem(false));
     }
   }
 
@@ -66,9 +87,13 @@ export function CriarLayout({ icps, brandParams }: Props) {
       <PainelOutput
         objetivo={objetivo}     setObjetivo={setObjetivo}
         tema={tema}             setTema={setTema}
-        output={output}
-        isGenerating={isGenerating}
-        error={genError}
+        outputTexto={outputTexto}
+        outputImagem={outputImagem}
+        loadingTexto={loadingTexto}
+        loadingImagem={loadingImagem}
+        erroTexto={erroTexto}
+        erroImagem={erroImagem}
+        estilo={estilo}
       />
     </div>
   );
