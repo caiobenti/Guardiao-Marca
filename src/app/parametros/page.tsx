@@ -9,7 +9,7 @@ import { ICPCard } from "@/components/parametros/ICPCard";
 export default async function ParametrosPage() {
   // 1. Valida se o user_code existe no DB1
   const { data: user, error: userError } = await supabase
-    .from("users")
+    .from("DB1 - users")
     .select("*")
     .eq("user_code", CURRENT_USER_CODE)
     .single();
@@ -41,14 +41,14 @@ export default async function ParametrosPage() {
 
   // 2. Busca parâmetros de marca no DB2
   const { data: brandParams } = await supabase
-    .from("brand_parameters")
+    .from("DB2 - brand_parameters")
     .select("*")
     .eq("user_code", CURRENT_USER_CODE)
     .maybeSingle();
 
   // 3. Busca ICP ativo no DB3
   const { data: icp } = await supabase
-    .from("icp_archetypes")
+    .from("DB3 - icp_archetypes")
     .select("*")
     .eq("user_code", CURRENT_USER_CODE)
     .eq("status", "ativo")

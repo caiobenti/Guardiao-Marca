@@ -44,13 +44,13 @@ export function ICPCard({ data, userCode }: Props) {
     if (data?.id) {
       // Atualiza registro existente
       await supabase
-        .from("icp_archetypes")
+        .from("DB3 - icp_archetypes")
         .update(payload)
         .eq("id", data.id);
     } else {
       // Cria novo registro
       await supabase
-        .from("icp_archetypes")
+        .from("DB3 - icp_archetypes")
         .insert({ ...payload, created_at: new Date().toISOString() });
     }
 

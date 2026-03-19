@@ -93,7 +93,7 @@ export function VozEscrita({ data, userCode }: Props) {
     };
 
     await supabase
-      .from("brand_parameters")
+      .from("DB2 - brand_parameters")
       .upsert(payload, { onConflict: "user_code" });
 
     setSaving(false);
