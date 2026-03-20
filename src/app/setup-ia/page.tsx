@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { CURRENT_USER_CODE } from "@/lib/config";
-import ParametroIAClient from "@/components/parametro-ia/ParametroIAClient";
+import SetupIATable from "@/components/setup-ia/SetupIATable";
 
 export const dynamic = "force-dynamic";
 
@@ -20,12 +20,10 @@ export default async function SetupIAPage() {
 
   return (
     <div className="h-full overflow-y-auto bg-[#f9f9f7]">
-      <ParametroIAClient
+      <SetupIATable
         userId={userId}
         userCode={CURRENT_USER_CODE}
-        initialConfig={null}
-        viewMode="setup"
-        initialVehicleRules={vehicleRules ?? []}
+        initialRows={vehicleRules ?? []}
       />
     </div>
   );
