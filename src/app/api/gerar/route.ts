@@ -115,9 +115,8 @@ export async function POST(req: NextRequest) {
           copyLimit: vehicleRule.copy_limit,
           criticalPreview: vehicleRule.critical_preview,
           hookIntent: vehicleRule.hook,
-          promptGuide: [vehicleRule.intent, vehicleRule.prompt_guide]
-            .filter(Boolean)
-            .join(" | "),
+          intent: vehicleRule.intent,
+          promptGuide: vehicleRule.prompt_guide,
         },
       },
     };

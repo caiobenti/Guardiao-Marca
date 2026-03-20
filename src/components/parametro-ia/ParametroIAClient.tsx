@@ -73,6 +73,17 @@ interface Props {
   userId: string;
   userCode: string;
   initialConfig: Partial<IAConfig> | null;
+  viewMode?: "legacy" | "setup";
+  initialVehicleRules?: Array<{
+    channel: string;
+    format: string;
+    output_schema: string;
+    copy_limit: string;
+    critical_preview: string;
+    hook: string;
+    intent: string;
+    prompt_guide: string;
+  }>;
 }
 
 function buildDefaultPromptBlocksConfig(): PromptBlocksConfig {
@@ -103,6 +114,8 @@ export default function ParametroIAClient({
   userId,
   userCode,
   initialConfig,
+  viewMode = "legacy",
+  initialVehicleRules = [],
 }: Props) {
   const [systemPromptTxt, setSystemPromptTxt] = useState(
     initialConfig?.system_prompt_txt ?? DEFAULT_SYSTEM_PROMPT_TXT
@@ -124,6 +137,20 @@ export default function ParametroIAClient({
   );
   const [maxTokens, setMaxTokens] = useState(initialConfig?.max_tokens ?? 2048);
   const [promptBlocksConfig, setPromptBlocksConfig] = useState<PromptBlocksConfig>(() => {
+    if (viewMode === "setup" && initialVehicleRules.length > 0) {
+      const vehicleRules: NonNullable<PromptBlocksConfig["vehicleRules"]> = {};
+      for (const row of initialVehicleRules) {
+        vehicleRules[`${row.channel}::${row.format}`] = {
+          outputSchema: row.output_schema ?? "",
+          copyLimit: row.copy_limit ?? "",
+          criticalPreview: row.critical_preview ?? "",
+          hookIntent: row.hook ?? "",
+          intent: row.intent ?? "",
+          promptGuide: row.prompt_guide ?? "",
+        };
+      }
+      return { vehicleRules };
+    }
     const fromDb = initialConfig?.prompt_blocks_json;
     if (fromDb && typeof fromDb === "object") {
       return fromDb as PromptBlocksConfig;
@@ -157,6 +184,39 @@ export default function ParametroIAClient({
 
   async function handleSave() {
     setSaving(true);
+    if (viewMode === "setup") {
+      const entries = Object.entries(promptBlocksConfig.vehicleRules ?? {});
+      const rows = entries.map(([key, value]) => {
+        const [channel, format] = key.split("::");
+        return {
+          user_code: userCode,
+          user_id: userId,
+          channel: channel ?? "",
+          format: format ?? "",
+          output_schema: value.outputSchema ?? "",
+          copy_limit: value.copyLimit ?? "",
+          critical_preview: value.criticalPreview ?? "",
+          hook: value.hookIntent ?? "",
+          intent: value.intent ?? "",
+          prompt_guide: value.promptGuide ?? "",
+        };
+      });
+
+      const { error } = await supabase
+        .from("DB5 - ia_vehicle_rules")
+        .upsert(rows, { onConflict: "user_code,channel,format" });
+
+      setSaving(false);
+      if (error) {
+        setSaveMsg("Erro: " + error.message);
+      } else {
+        setIsDirty(false);
+        setSaveMsg("Salvo!");
+        setTimeout(() => setSaveMsg(""), 3000);
+      }
+      return;
+    }
+
     const payload = {
       user_code: userCode,
       user_id: userId,
@@ -253,6 +313,7 @@ export default function ParametroIAClient({
     copyLimit: "",
     criticalPreview: "",
     hookIntent: "",
+    intent: "",
     promptGuide: "",
   };
 
@@ -262,6 +323,7 @@ export default function ParametroIAClient({
       copyLimit: string;
       criticalPreview: string;
       hookIntent: string;
+      intent: string;
       promptGuide: string;
     }>
   ) {
@@ -274,6 +336,7 @@ export default function ParametroIAClient({
           copyLimit: patch.copyLimit ?? selectedRule.copyLimit,
           criticalPreview: patch.criticalPreview ?? selectedRule.criticalPreview,
           hookIntent: patch.hookIntent ?? selectedRule.hookIntent,
+          intent: patch.intent ?? selectedRule.intent,
           promptGuide: patch.promptGuide ?? selectedRule.promptGuide,
         },
       },
@@ -284,9 +347,13 @@ export default function ParametroIAClient({
     <div className="max-w-6xl mx-auto px-6 py-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
         <div>
-          <h1 className="text-xl font-semibold text-stone-800">Parâmetro IA</h1>
+          <h1 className="text-xl font-semibold text-stone-800">
+            {viewMode === "setup" ? "Setup IA" : "Parâmetro IA"}
+          </h1>
           <p className="text-sm text-stone-400 mt-0.5">
-            Prompts separados para texto (Groq) e imagem (FLUX)
+            {viewMode === "setup"
+              ? "Configuração estruturada dos blocos de prompt (A/B/C/D)"
+              : "Prompts separados para texto (Groq) e imagem (FLUX)"}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -323,6 +390,7 @@ export default function ParametroIAClient({
         </div>
       </div>
 
+      {viewMode !== "setup" && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Coluna texto */}
         <div className="space-y-6">
@@ -441,17 +509,20 @@ export default function ParametroIAClient({
           </div>
         </div>
       </div>
+      )}
 
-      <div className="mt-8 bg-white rounded-2xl border border-stone-200 p-6 shadow-sm">
+      <div className={`${viewMode === "setup" ? "mt-0" : "mt-8"} bg-white rounded-2xl border border-stone-200 p-6 shadow-sm`}>
         <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-5">
-          Blocos estruturados de prompt (A/B/C/D)
+          {viewMode === "setup"
+            ? "Setup IA · Bloco B (DB5 - ia_vehicle_rules)"
+            : "Blocos estruturados de prompt (A/B/C/D)"}
         </label>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-4">
+        <div className={`grid grid-cols-1 ${viewMode === "setup" ? "" : "lg:grid-cols-3"} gap-6`}>
+          <div className={`${viewMode === "setup" ? "" : "lg:col-span-2"} space-y-4`}>
             <h3 className="text-sm font-semibold text-stone-700">Bloco B - Veículo</h3>
             <p className="text-xs text-stone-500">
-              Defina regras por canal + formato para guiar schema, limites e gancho.
+              Defina regras por canal + formato para guiar schema, limites, preview, gancho e intenção.
             </p>
             <div className="grid grid-cols-2 gap-3">
               <label className="text-xs text-stone-500">
@@ -510,10 +581,18 @@ export default function ParametroIAClient({
                 />
               </label>
               <label className="text-xs text-stone-500">
-                Gancho / intenção
+                Gancho
                 <input
                   value={selectedRule.hookIntent}
                   onChange={(e) => updateSelectedRule({ hookIntent: e.target.value })}
+                  className="mt-1 w-full text-sm border border-stone-300 rounded-lg px-2 py-1.5"
+                />
+              </label>
+              <label className="text-xs text-stone-500">
+                Intenção
+                <input
+                  value={selectedRule.intent ?? ""}
+                  onChange={(e) => updateSelectedRule({ intent: e.target.value })}
                   className="mt-1 w-full text-sm border border-stone-300 rounded-lg px-2 py-1.5"
                 />
               </label>
@@ -529,6 +608,7 @@ export default function ParametroIAClient({
             </label>
           </div>
 
+          {viewMode !== "setup" && (
           <div className="space-y-5">
             <div>
               <h3 className="text-sm font-semibold text-stone-700 mb-2">Bloco C - Contrato de saída</h3>
@@ -606,9 +686,11 @@ export default function ParametroIAClient({
               </label>
             </div>
           </div>
+          )}
         </div>
       </div>
 
+      {viewMode !== "setup" && (
       <div className="mt-8 bg-white rounded-2xl border border-stone-200 p-6 shadow-sm">
         <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-5">
           Configurações do modelo (texto)
@@ -671,6 +753,7 @@ export default function ParametroIAClient({
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }

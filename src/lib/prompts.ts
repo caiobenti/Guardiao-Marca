@@ -341,6 +341,7 @@ export interface PromptBlocksConfig {
     copyLimit: string;
     criticalPreview: string;
     hookIntent: string;
+    intent?: string;
     promptGuide: string;
   }>;
   outputContracts?: {
@@ -416,11 +417,12 @@ export function buildPromptBlocks(params: UserPromptParams): PromptBlocks {
         copyLimit: customRule.copyLimit,
         criticalPreview: customRule.criticalPreview,
         hookIntent: customRule.hookIntent,
+        intent: customRule.intent,
         promptGuide: customRule.promptGuide,
       }
     : null;
   const ruleSummary = rule
-    ? `Schema: ${rule.outputSchema}\nLimite: ${rule.copyLimit}\nPreview crítico: ${rule.criticalPreview}\nGancho: ${rule.hookIntent}\nInstrução: ${rule.promptGuide}`
+    ? `Schema: ${rule.outputSchema}\nLimite: ${rule.copyLimit}\nPreview crítico: ${rule.criticalPreview}\nGancho: ${rule.hookIntent}\nIntenção: ${rule.intent ?? ""}\nInstrução: ${rule.promptGuide}`
     : "Sem regra específica para este veículo/formato. Use boas práticas do canal.";
 
   return {
