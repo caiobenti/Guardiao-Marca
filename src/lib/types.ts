@@ -42,8 +42,10 @@ export interface IAConfig {
   id?: string;
   user_code: string;
   user_id: string;
-  system_prompt: string;
-  user_template: string;
+  system_prompt_txt: string;
+  user_template_txt: string;
+  system_prompt_img: string;
+  user_template_img: string;
   model: string;
   temperature: number;
   max_tokens: number;

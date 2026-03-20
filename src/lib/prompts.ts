@@ -8,8 +8,8 @@
 //   buildUserPrompt(params)        → monta o briefing específico de cada geração
 //   CANAL_CONTEXT                  → orientações de formato por canal
 //
-//   DEFAULT_SYSTEM_PROMPT / DEFAULT_USER_TEMPLATE
-//     → texto padrão mostrado no editor de /parametro-ia.
+//   DEFAULT_*_TXT / DEFAULT_*_IMG
+//     → texto padrão no editor de /parametro-ia (colunas DB4 homônimas).
 //     → Se o usuário salvar um template customizado no DB4, ele substitui
 //       as funções acima no momento da geração (via buildPromptFromTemplate).
 // ───────────────────────────────────────────────────────────────────────────
@@ -20,7 +20,7 @@ import { ICPArchetype, BrandParameters } from "./types";
 // Estes textos são o ponto de partida do editor. O usuário pode modificá-los
 // livremente e salvar no banco — sem precisar alterar código.
 
-export const DEFAULT_SYSTEM_PROMPT = `Você é o Guardião da Marca — um especialista em comunicação estratégica e copywriting responsável por criar conteúdos que refletem com precisão a identidade, a voz e os valores da marca.
+export const DEFAULT_SYSTEM_PROMPT_TXT = `Você é o Guardião da Marca — um especialista em comunicação estratégica e copywriting responsável por criar conteúdos que refletem com precisão a identidade, a voz e os valores da marca.
 
 Seu papel é entregar conteúdos prontos para publicação, sem introduções desnecessárias, sem explicações sobre o que fez, e sem metadados. Apenas o conteúdo.
 
@@ -43,7 +43,7 @@ REGRAS ABSOLUTAS:
 - Se houver persona definida, escreva diretamente para ela.
 - Entregue o conteúdo completo. Nunca trunque com "...".`
 
-export const DEFAULT_USER_TEMPLATE = `## Briefing de conteúdo
+export const DEFAULT_USER_TEMPLATE_TXT = `## Briefing de conteúdo
 
 **Canal:** {{canal}}
 **Formato:** {{formato}}
@@ -62,6 +62,27 @@ O que mais valoriza: {{persona_valor}}
 
 ---
 Crie o conteúdo agora. Entregue direto, sem preâmbulos.`
+
+export const DEFAULT_SYSTEM_PROMPT_IMG = `You are a visual prompt engineer for FLUX image generation. Convert marketing briefs into concise, vivid image prompts.
+
+Output only the image prompt — no explanations, no commentary.
+
+Guidelines:
+- Describe composition, lighting, mood, color palette and visual style
+- Be specific (e.g., "warm golden hour lighting", "clean white studio background")
+- No text overlays unless explicitly requested
+- Optimize for 1:1 square format
+- Match brand colors and visual style when provided`
+
+export const DEFAULT_USER_TEMPLATE_IMG = `Channel: {{canal}}
+Persona: {{persona_nome}}
+Theme: {{tema}}
+Objective: {{objetivo}}
+Brand colors: {{dna_cores}}
+Visual style: {{dna_estilo_imagem}}
+Mood: {{voz_tom}}
+
+Generate a square (1:1) marketing image prompt.`
 
 // ─── Template engine ───────────────────────────────────────────────────────
 // Substitui {{variavel}} pelo valor correspondente no objeto vars.

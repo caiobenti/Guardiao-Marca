@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     let systemPrompt: string;
     let userPrompt: string;
 
-    if (iaConfig?.system_prompt || iaConfig?.user_template) {
+    if (iaConfig?.system_prompt_txt || iaConfig?.user_template_txt) {
       const vars = buildTemplateVars({
         canal:       body.canal,
         formato:     body.formato,
@@ -53,11 +53,11 @@ export async function POST(req: NextRequest) {
         brandParams: body.brandParams ?? null,
       });
       systemPrompt = buildPromptFromTemplate(
-        iaConfig?.system_prompt || "",
+        iaConfig?.system_prompt_txt || "",
         vars
       );
       userPrompt = buildPromptFromTemplate(
-        iaConfig?.user_template || "",
+        iaConfig?.user_template_txt || "",
         vars
       );
     } else {

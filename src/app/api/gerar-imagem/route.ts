@@ -1,16 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { buildImagePrompt } from "@/lib/prompts";
+import { buildImagePrompt, buildPromptFromTemplate, buildTemplateVars } from "@/lib/prompts";
 import { BrandParameters, ICPArchetype } from "@/lib/types";
+import { supabase } from "@/lib/supabase";
+import { CURRENT_USER_CODE } from "@/lib/config";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { canal, tema, objetivo, persona, brandParams } = body as {
+    const { canal, tema, objetivo, persona, brandParams, formato, estilo } = body as {
       canal: string;
       tema: string;
       objetivo: string;
       persona: ICPArchetype | null;
       brandParams: Partial<BrandParameters> | null;
+      formato?: string;
+      estilo?: string;
     };
 
     const hfToken = process.env.HF_TOKEN;
@@ -18,7 +22,43 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "HF_TOKEN não configurado" }, { status: 500 });
     }
 
-    const prompt = buildImagePrompt({ canal, tema, objetivo, persona, brandParams });
+    const fallbackPrompt = buildImagePrompt({
+      canal,
+      tema,
+      objetivo,
+      persona,
+      brandParams,
+    });
+
+    const { data: iaConfig } = await supabase
+      .from("DB4 - ia_config")
+      .select("system_prompt_img, user_template_img")
+      .eq("user_code", CURRENT_USER_CODE)
+      .maybeSingle();
+
+    const vars = buildTemplateVars({
+      canal,
+      formato: formato ?? "",
+      estilo: estilo ?? "",
+      objetivo,
+      tema,
+      persona,
+      brandParams,
+    });
+
+    const sysImg = (iaConfig?.system_prompt_img
+      ? buildPromptFromTemplate(iaConfig.system_prompt_img, vars)
+      : ""
+    ).trim();
+    const usrImg = (iaConfig?.user_template_img
+      ? buildPromptFromTemplate(iaConfig.user_template_img, vars)
+      : ""
+    ).trim();
+
+    const finalPrompt =
+      sysImg || usrImg
+        ? [sysImg, usrImg].filter(Boolean).join("\n\n")
+        : fallbackPrompt;
 
     // FLUX.1-schnell via Hugging Face — gratuito
     const res = await fetch(
@@ -29,7 +69,7 @@ export async function POST(req: NextRequest) {
           Authorization: `Bearer ${hfToken}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ inputs: prompt }),
+        body: JSON.stringify({ inputs: finalPrompt }),
       }
     );
 
