@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SlideLayerEditor } from "@/components/editor/SlideLayerEditor";
 
 interface OutputSlide {
@@ -23,6 +23,7 @@ interface Props {
   setShowPromptDebug: (v: boolean) => void;
   promptTextoDebug: string;
   promptImagemDebug: string;
+  brandColorShortcuts: string[];
 }
 
 export function PainelOutput({
@@ -42,8 +43,18 @@ export function PainelOutput({
   setShowPromptDebug,
   promptTextoDebug,
   promptImagemDebug,
+  brandColorShortcuts,
 }: Props) {
-  const [editingSlide, setEditingSlide] = useState<OutputSlide | null>(null);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [editingSlideIndex, setEditingSlideIndex] = useState(1);
+
+  // Auto-open no primeiro slide assim que as imagens chegarem.
+  useEffect(() => {
+    if (outputSlides.length > 0) {
+      setIsEditorOpen(true);
+      setEditingSlideIndex(outputSlides[0].index);
+    }
+  }, [outputSlides]);
 
   return (
     <div className="flex-1 h-full flex flex-col overflow-hidden bg-[#f9f9f7]">
@@ -172,7 +183,10 @@ export function PainelOutput({
                           <span className="text-xs text-stone-500 font-medium">Slide {slide.index}</span>
                           <button
                             type="button"
-                            onClick={() => setEditingSlide(slide)}
+                            onClick={() => {
+                              setEditingSlideIndex(slide.index);
+                              setIsEditorOpen(true);
+                            }}
                             className="text-xs text-[#1a6b5a] hover:underline"
                           >
                             Editar
@@ -208,11 +222,13 @@ export function PainelOutput({
           </div>
         )}
       </div>
-      {editingSlide && (
+      {isEditorOpen && outputSlides.length > 0 && (
         <SlideLayerEditor
-          imageUrl={editingSlide.imageUrl}
-          slideIndex={editingSlide.index}
-          onClose={() => setEditingSlide(null)}
+          slides={outputSlides}
+          currentSlideIndex={editingSlideIndex}
+          onChangeSlide={setEditingSlideIndex}
+          brandColorShortcuts={brandColorShortcuts}
+          onClose={() => setIsEditorOpen(false)}
         />
       )}
     </div>

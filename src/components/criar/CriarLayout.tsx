@@ -36,6 +36,7 @@ export function CriarLayout({ icps, brandParams }: Props) {
   const [promptTextoDebug, setPromptTextoDebug] = useState("");
   const [promptImagemDebug, setPromptImagemDebug] = useState("");
   const [showPromptDebug, setShowPromptDebug] = useState(false);
+  const brandColorShortcuts = (brandParams?.color_palette ?? []).filter(Boolean);
 
   const canGenerate = canal.trim() !== "" && tema.trim() !== "";
   const isGenerating = loadingTexto || loadingImagem;
@@ -228,6 +229,7 @@ export function CriarLayout({ icps, brandParams }: Props) {
         setShowPromptDebug={setShowPromptDebug}
         promptTextoDebug={promptTextoDebug}
         promptImagemDebug={promptImagemDebug}
+        brandColorShortcuts={brandColorShortcuts}
       />
     </div>
   );

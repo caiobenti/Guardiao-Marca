@@ -1,8 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Layer, Stage, Image as KonvaImage, Text, Transformer } from "react-konva";
+import { Group, Layer, Rect, Stage, Image as KonvaImage, Text, Transformer } from "react-konva";
 import type Konva from "konva";
+
+interface SlideItem {
+  index: number;
+  imageUrl: string;
+}
 
 interface TextLayer {
   id: string;
@@ -11,56 +16,94 @@ interface TextLayer {
   y: number;
   width: number;
   fontSize: number;
-  fill: string;
+  textColor: string;
+  bgColor: string;
+  bgOpacity: number;
+  paddingX: number;
+  paddingY: number;
+  radius: number;
+  opacity: number;
+  locked: boolean;
 }
 
 interface Props {
-  imageUrl: string;
-  slideIndex: number;
+  slides: SlideItem[];
+  currentSlideIndex: number;
+  onChangeSlide: (index: number) => void;
+  brandColorShortcuts: string[];
   onClose: () => void;
 }
 
 const CANVAS_WIDTH = 1024;
 const CANVAS_HEIGHT = 1024;
 
-export function SlideLayerEditor({ imageUrl, slideIndex, onClose }: Props) {
+export function SlideLayerEditor({
+  slides,
+  currentSlideIndex,
+  onChangeSlide,
+  brandColorShortcuts,
+  onClose,
+}: Props) {
   const stageRef = useRef<Konva.Stage>(null);
-  const textRef = useRef<Konva.Text>(null);
+  const groupRef = useRef<Konva.Group>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
   const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null);
-  const [layers, setLayers] = useState<TextLayer[]>([]);
+  const [layersBySlide, setLayersBySlide] = useState<Record<number, TextLayer[]>>({});
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const currentSlide = useMemo(
+    () => slides.find((s) => s.index === currentSlideIndex) ?? slides[0],
+    [slides, currentSlideIndex]
+  );
+  const layers = layersBySlide[currentSlide.index] ?? [];
 
   useEffect(() => {
     const img = new window.Image();
     img.crossOrigin = "anonymous";
-    img.src = imageUrl;
+    img.src = currentSlide.imageUrl;
     img.onload = () => setBgImage(img);
-  }, [imageUrl]);
+  }, [currentSlide.imageUrl]);
 
   useEffect(() => {
-    if (!selectedId || !textRef.current || !transformerRef.current) return;
-    transformerRef.current.nodes([textRef.current]);
+    setSelectedId(null);
+  }, [currentSlide.index]);
+
+  useEffect(() => {
+    if (!selectedId || !groupRef.current || !transformerRef.current) return;
+    transformerRef.current.nodes([groupRef.current]);
     transformerRef.current.getLayer()?.batchDraw();
-  }, [selectedId]);
+  }, [selectedId, layers]);
 
   const selectedLayer = useMemo(
     () => layers.find((l) => l.id === selectedId) ?? null,
     [layers, selectedId]
   );
 
+  function setCurrentLayers(updater: (current: TextLayer[]) => TextLayer[]) {
+    setLayersBySlide((prev) => ({
+      ...prev,
+      [currentSlide.index]: updater(prev[currentSlide.index] ?? []),
+    }));
+  }
+
   function addTextLayer() {
     const id = `text-${Date.now()}`;
-    setLayers((prev) => [
+    setCurrentLayers((prev) => [
       ...prev,
       {
         id,
         text: "Seu texto aqui",
         x: 120,
         y: 120,
-        width: 420,
-        fontSize: 52,
-        fill: "#ffffff",
+        width: 360,
+        fontSize: 54,
+        textColor: "#ffffff",
+        bgColor: "#1a6b5a",
+        bgOpacity: 0.85,
+        paddingX: 26,
+        paddingY: 16,
+        radius: 16,
+        opacity: 1,
+        locked: false,
       },
     ]);
     setSelectedId(id);
@@ -68,18 +111,28 @@ export function SlideLayerEditor({ imageUrl, slideIndex, onClose }: Props) {
 
   function updateSelected(patch: Partial<TextLayer>) {
     if (!selectedId) return;
-    setLayers((prev) => prev.map((l) => (l.id === selectedId ? { ...l, ...patch } : l)));
+    setCurrentLayers((prev) => prev.map((l) => (l.id === selectedId ? { ...l, ...patch } : l)));
   }
 
   function deleteSelected() {
     if (!selectedId) return;
-    setLayers((prev) => prev.filter((l) => l.id !== selectedId));
+    setCurrentLayers((prev) => prev.filter((l) => l.id !== selectedId));
     setSelectedId(null);
+  }
+
+  function duplicateSelected() {
+    if (!selectedLayer) return;
+    const id = `text-${Date.now()}`;
+    setCurrentLayers((prev) => [
+      ...prev,
+      { ...selectedLayer, id, x: selectedLayer.x + 30, y: selectedLayer.y + 30 },
+    ]);
+    setSelectedId(id);
   }
 
   function moveSelected(direction: "up" | "down") {
     if (!selectedId) return;
-    setLayers((prev) => {
+    setCurrentLayers((prev) => {
       const idx = prev.findIndex((l) => l.id === selectedId);
       if (idx < 0) return prev;
       if (direction === "up" && idx === prev.length - 1) return prev;
@@ -95,18 +148,138 @@ export function SlideLayerEditor({ imageUrl, slideIndex, onClose }: Props) {
     const uri = stageRef.current?.toDataURL({ pixelRatio: 2 });
     if (!uri) return;
     const link = document.createElement("a");
-    link.download = `slide-${slideIndex}-final.png`;
+    link.download = `slide-${currentSlide.index}-final.png`;
     link.href = uri;
     link.click();
   }
 
+  function prevSlide() {
+    const idx = slides.findIndex((s) => s.index === currentSlide.index);
+    if (idx > 0) onChangeSlide(slides[idx - 1].index);
+  }
+
+  function nextSlide() {
+    const idx = slides.findIndex((s) => s.index === currentSlide.index);
+    if (idx >= 0 && idx < slides.length - 1) onChangeSlide(slides[idx + 1].index);
+  }
+
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-6">
-      <div className="w-full max-w-7xl max-h-[95vh] bg-white rounded-xl border border-stone-200 overflow-hidden grid grid-cols-[300px_1fr]">
-        <aside className="border-r border-stone-200 p-4 flex flex-col gap-4 overflow-y-auto">
+      <div className="w-full max-w-[1400px] max-h-[95vh] bg-white rounded-xl border border-stone-200 overflow-hidden grid grid-cols-[1fr_360px]">
+        <div className="p-4 overflow-auto bg-stone-100">
+          <div className="mx-auto w-max">
+            <Stage
+              ref={stageRef}
+              width={CANVAS_WIDTH}
+              height={CANVAS_HEIGHT}
+              onMouseDown={(e) => {
+                if (e.target === e.target.getStage()) setSelectedId(null);
+              }}
+              className="bg-white border border-stone-300"
+            >
+              <Layer>
+                {bgImage && (
+                  <KonvaImage image={bgImage} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} />
+                )}
+              </Layer>
+              <Layer>
+                {layers.map((layer) => {
+                  const isSelected = layer.id === selectedId;
+                  const textHeight = Math.ceil(layer.fontSize * 1.25);
+                  const boxHeight = textHeight + layer.paddingY * 2;
+                  return (
+                    <Group
+                      key={layer.id}
+                      ref={isSelected ? groupRef : undefined}
+                      x={layer.x}
+                      y={layer.y}
+                      draggable={!layer.locked}
+                      opacity={layer.opacity}
+                      onClick={() => setSelectedId(layer.id)}
+                      onTap={() => setSelectedId(layer.id)}
+                      onDragEnd={(e) => {
+                        setCurrentLayers((prev) =>
+                          prev.map((l) =>
+                            l.id === layer.id ? { ...l, x: e.target.x(), y: e.target.y() } : l
+                          )
+                        );
+                      }}
+                      onTransformEnd={(e) => {
+                        const node = e.target as Konva.Group;
+                        const scaleX = node.scaleX();
+                        const scaleY = node.scaleY();
+                        node.scaleX(1);
+                        node.scaleY(1);
+                        setCurrentLayers((prev) =>
+                          prev.map((l) =>
+                            l.id === layer.id
+                              ? {
+                                  ...l,
+                                  x: node.x(),
+                                  y: node.y(),
+                                  width: Math.max(120, l.width * scaleX),
+                                  fontSize: Math.max(14, Math.round(l.fontSize * scaleY)),
+                                }
+                              : l
+                          )
+                        );
+                      }}
+                    >
+                      <Rect
+                        x={0}
+                        y={0}
+                        width={layer.width + layer.paddingX * 2}
+                        height={boxHeight}
+                        cornerRadius={layer.radius}
+                        fill={layer.bgColor}
+                        opacity={layer.bgOpacity}
+                      />
+                      <Text
+                        text={layer.text}
+                        x={layer.paddingX}
+                        y={layer.paddingY}
+                        width={layer.width}
+                        fontSize={layer.fontSize}
+                        fill={layer.textColor}
+                        fontFamily="Inter, sans-serif"
+                      />
+                    </Group>
+                  );
+                })}
+                {selectedId && (
+                  <Transformer
+                    ref={transformerRef}
+                    rotateEnabled={false}
+                    enabledAnchors={["top-left", "top-right", "bottom-left", "bottom-right"]}
+                  />
+                )}
+              </Layer>
+            </Stage>
+          </div>
+        </div>
+
+        <aside className="border-l border-stone-200 p-4 flex flex-col gap-4 overflow-y-auto bg-white">
           <div>
-            <h3 className="text-sm font-semibold text-stone-800">Editor do Slide {slideIndex}</h3>
+            <h3 className="text-sm font-semibold text-stone-800">Editor do Slide {currentSlide.index}</h3>
             <p className="text-xs text-stone-500 mt-1">Adicione camadas de texto e exporte PNG unificado.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={prevSlide}
+              className="px-2 py-1.5 text-xs border border-stone-300 rounded-lg disabled:opacity-40"
+              disabled={slides.findIndex((s) => s.index === currentSlide.index) <= 0}
+            >
+              Slide anterior
+            </button>
+            <button
+              type="button"
+              onClick={nextSlide}
+              className="px-2 py-1.5 text-xs border border-stone-300 rounded-lg disabled:opacity-40"
+              disabled={slides.findIndex((s) => s.index === currentSlide.index) >= slides.length - 1}
+            >
+              Próximo slide
+            </button>
           </div>
           <div className="flex gap-2">
             <button
@@ -115,6 +288,14 @@ export function SlideLayerEditor({ imageUrl, slideIndex, onClose }: Props) {
               className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#1a6b5a] text-white"
             >
               + Texto
+            </button>
+            <button
+              type="button"
+              onClick={duplicateSelected}
+              disabled={!selectedLayer}
+              className="px-3 py-1.5 rounded-lg text-xs border border-stone-300 disabled:opacity-40"
+            >
+              Duplicar
             </button>
             <button
               type="button"
@@ -149,15 +330,111 @@ export function SlideLayerEditor({ imageUrl, slideIndex, onClose }: Props) {
                   />
                 </label>
                 <label className="text-xs text-stone-500">
-                  Cor
+                  Cor do texto
                   <input
                     type="color"
-                    value={selectedLayer.fill}
-                    onChange={(e) => updateSelected({ fill: e.target.value })}
+                    value={selectedLayer.textColor}
+                    onChange={(e) => updateSelected({ textColor: e.target.value })}
                     className="mt-1 w-full h-9 border border-stone-300 rounded-lg"
                   />
                 </label>
               </div>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="text-xs text-stone-500">
+                  Fundo
+                  <input
+                    type="color"
+                    value={selectedLayer.bgColor}
+                    onChange={(e) => updateSelected({ bgColor: e.target.value })}
+                    className="mt-1 w-full h-9 border border-stone-300 rounded-lg"
+                  />
+                </label>
+                <label className="text-xs text-stone-500">
+                  Opacidade fundo
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    value={selectedLayer.bgOpacity}
+                    onChange={(e) => updateSelected({ bgOpacity: Number(e.target.value) })}
+                    className="mt-2 w-full accent-[#1a6b5a]"
+                  />
+                </label>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="text-xs text-stone-500">
+                  Padding X
+                  <input
+                    type="number"
+                    min={0}
+                    max={120}
+                    value={selectedLayer.paddingX}
+                    onChange={(e) => updateSelected({ paddingX: Number(e.target.value) || 0 })}
+                    className="mt-1 w-full border border-stone-300 rounded-lg px-2 py-1.5 text-sm"
+                  />
+                </label>
+                <label className="text-xs text-stone-500">
+                  Padding Y
+                  <input
+                    type="number"
+                    min={0}
+                    max={120}
+                    value={selectedLayer.paddingY}
+                    onChange={(e) => updateSelected({ paddingY: Number(e.target.value) || 0 })}
+                    className="mt-1 w-full border border-stone-300 rounded-lg px-2 py-1.5 text-sm"
+                  />
+                </label>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="text-xs text-stone-500">
+                  Arredondamento
+                  <input
+                    type="number"
+                    min={0}
+                    max={120}
+                    value={selectedLayer.radius}
+                    onChange={(e) => updateSelected({ radius: Number(e.target.value) || 0 })}
+                    className="mt-1 w-full border border-stone-300 rounded-lg px-2 py-1.5 text-sm"
+                  />
+                </label>
+                <label className="text-xs text-stone-500">
+                  Opacidade camada
+                  <input
+                    type="range"
+                    min={0.1}
+                    max={1}
+                    step={0.05}
+                    value={selectedLayer.opacity}
+                    onChange={(e) => updateSelected({ opacity: Number(e.target.value) })}
+                    className="mt-2 w-full accent-[#1a6b5a]"
+                  />
+                </label>
+              </div>
+              <button
+                type="button"
+                onClick={() => updateSelected({ locked: !selectedLayer.locked })}
+                className="px-2 py-1.5 text-xs border border-stone-300 rounded-lg"
+              >
+                {selectedLayer.locked ? "Desbloquear camada" : "Bloquear camada"}
+              </button>
+              {brandColorShortcuts.length > 0 && (
+                <div>
+                  <p className="text-xs text-stone-500 mb-1">Atalhos de cor da marca</p>
+                  <div className="flex flex-wrap gap-2">
+                    {brandColorShortcuts.map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => updateSelected({ bgColor: color })}
+                        title={color}
+                        className="w-7 h-7 rounded-full border border-stone-300"
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -193,74 +470,6 @@ export function SlideLayerEditor({ imageUrl, slideIndex, onClose }: Props) {
             </button>
           </div>
         </aside>
-        <div className="p-4 overflow-auto bg-stone-100">
-          <div className="mx-auto w-max">
-            <Stage
-              ref={stageRef}
-              width={CANVAS_WIDTH}
-              height={CANVAS_HEIGHT}
-              onMouseDown={(e) => {
-                if (e.target === e.target.getStage()) setSelectedId(null);
-              }}
-              className="bg-white border border-stone-300"
-            >
-              <Layer>
-                {bgImage && (
-                  <KonvaImage image={bgImage} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} />
-                )}
-              </Layer>
-              <Layer>
-                {layers.map((layer) => (
-                  <Text
-                    key={layer.id}
-                    ref={layer.id === selectedId ? textRef : undefined}
-                    text={layer.text}
-                    x={layer.x}
-                    y={layer.y}
-                    width={layer.width}
-                    fontSize={layer.fontSize}
-                    fill={layer.fill}
-                    fontFamily="Inter, sans-serif"
-                    draggable
-                    onClick={() => setSelectedId(layer.id)}
-                    onTap={() => setSelectedId(layer.id)}
-                    onDragEnd={(e) => {
-                      setLayers((prev) =>
-                        prev.map((l) =>
-                          l.id === layer.id ? { ...l, x: e.target.x(), y: e.target.y() } : l
-                        )
-                      );
-                    }}
-                    onTransformEnd={(e) => {
-                      const node = e.target as Konva.Text;
-                      const scaleX = node.scaleX();
-                      node.scaleX(1);
-                      setLayers((prev) =>
-                        prev.map((l) =>
-                          l.id === layer.id
-                            ? {
-                                ...l,
-                                x: node.x(),
-                                y: node.y(),
-                                width: Math.max(80, node.width() * scaleX),
-                              }
-                            : l
-                        )
-                      );
-                    }}
-                  />
-                ))}
-                {selectedId && (
-                  <Transformer
-                    ref={transformerRef}
-                    rotateEnabled={false}
-                    enabledAnchors={["middle-left", "middle-right"]}
-                  />
-                )}
-              </Layer>
-            </Stage>
-          </div>
-        </div>
       </div>
     </div>
   );
