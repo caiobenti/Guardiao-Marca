@@ -84,6 +84,10 @@ export async function POST(req: NextRequest) {
     const model       = iaConfig?.model       || "llama-3.3-70b-versatile";
     const temperature = iaConfig?.temperature ?? 0.72;
     const maxTokens   = iaConfig?.max_tokens  ?? 2048;
+    const promptBlocksConfig =
+      iaConfig?.prompt_blocks_json && typeof iaConfig.prompt_blocks_json === "object"
+        ? iaConfig.prompt_blocks_json
+        : null;
 
     // Build prompts: use DB4 custom template if saved, otherwise built-in functions
     let systemPrompt: string;
@@ -99,6 +103,7 @@ export async function POST(req: NextRequest) {
         persona,
         brandParams: body.brandParams ?? null,
         briefingLivre: body.briefingLivre,
+        promptBlocksConfig,
       });
       systemPrompt = buildPromptFromTemplate(
         iaConfig?.system_prompt_txt || "",
@@ -111,7 +116,7 @@ export async function POST(req: NextRequest) {
     } else {
       // fallback: built-in rich prompt functions
       systemPrompt = buildSystemPrompt(body.brandParams);
-      userPrompt   = buildUserPrompt({ ...body, persona });
+      userPrompt   = buildUserPrompt({ ...body, persona, promptBlocksConfig });
     }
 
     if (body.estilo === "Texto e imagem") {
@@ -269,7 +274,7 @@ Nao inclua texto fora do JSON.`
       }
     }
 
-    const blocks = buildPromptBlocks({ ...body, persona });
+    const blocks = buildPromptBlocks({ ...body, persona, promptBlocksConfig });
     return NextResponse.json({
       content,
       slides,

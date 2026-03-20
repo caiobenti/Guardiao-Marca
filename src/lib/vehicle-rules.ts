@@ -8,7 +8,7 @@ export interface VehicleRule {
   promptGuide: string;
 }
 
-const VEHICLE_RULES: VehicleRule[] = [
+export const VEHICLE_RULES: VehicleRule[] = [
   {
     channel: "Instagram",
     format: "Post",
@@ -131,5 +131,9 @@ export function getVehicleRule(canal: string, formato: string): VehicleRule | nu
         rule.format.toLowerCase() === normalizedFormat
     ) ?? null
   );
+}
+
+export function getAllVehicleRules(): VehicleRule[] {
+  return [...VEHICLE_RULES];
 }
 

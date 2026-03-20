@@ -333,6 +333,25 @@ export interface UserPromptParams {
   objetivo: string;
   tema: string;
   briefingLivre?: string;
+  promptBlocksConfig?: PromptBlocksConfig | null;
+}
+
+export interface PromptBlocksConfig {
+  vehicleRules?: Record<string, {
+    outputSchema: string;
+    copyLimit: string;
+    criticalPreview: string;
+    hookIntent: string;
+    promptGuide: string;
+  }>;
+  outputContracts?: {
+    textOnly?: string;
+    imageOnly?: string;
+    textAndImage?: string;
+  };
+  priority?: {
+    briefingLivreFirst?: boolean;
+  };
 }
 
 export interface PromptBlocks {
@@ -372,8 +391,36 @@ function buildOutputContract(estilo: string): string {
   return "Retornar saída coerente com o estilo selecionado.";
 }
 
+function resolveOutputContract(
+  estilo: string,
+  config?: PromptBlocksConfig | null
+): string {
+  const custom = config?.outputContracts;
+  if (estilo === "Só texto") {
+    return custom?.textOnly?.trim() || buildOutputContract(estilo);
+  }
+  if (estilo === "Só imagem") {
+    return custom?.imageOnly?.trim() || buildOutputContract(estilo);
+  }
+  if (estilo === "Texto e imagem") {
+    return custom?.textAndImage?.trim() || buildOutputContract(estilo);
+  }
+  return buildOutputContract(estilo);
+}
+
 export function buildPromptBlocks(params: UserPromptParams): PromptBlocks {
-  const rule = getVehicleRule(params.canal, params.formato);
+  const key = `${params.canal}::${params.formato}`;
+  const customRule = params.promptBlocksConfig?.vehicleRules?.[key];
+  const fallbackRule = getVehicleRule(params.canal, params.formato);
+  const rule = customRule
+    ? {
+        outputSchema: customRule.outputSchema,
+        copyLimit: customRule.copyLimit,
+        criticalPreview: customRule.criticalPreview,
+        hookIntent: customRule.hookIntent,
+        promptGuide: customRule.promptGuide,
+      }
+    : fallbackRule;
   const ruleSummary = rule
     ? `Schema: ${rule.outputSchema}\nLimite: ${rule.copyLimit}\nPreview crítico: ${rule.criticalPreview}\nGancho: ${rule.hookIntent}\nInstrução: ${rule.promptGuide}`
     : "Sem regra específica para este veículo/formato. Use boas práticas do canal.";
@@ -390,7 +437,7 @@ export function buildPromptBlocks(params: UserPromptParams): PromptBlocks {
     },
     blockC: {
       estilo: params.estilo || "Livre",
-      outputContract: buildOutputContract(params.estilo),
+      outputContract: resolveOutputContract(params.estilo, params.promptBlocksConfig),
     },
     blockD: {
       briefingLivre: params.briefingLivre?.trim() ?? "",
@@ -473,8 +520,19 @@ export function buildImagePrompt(params: {
   copyGerada?: string
   imageDirective?: string
   briefingLivre?: string
+  promptBlocksConfig?: PromptBlocksConfig | null
 }): string {
-  const { canal, tema, objetivo, persona, brandParams, copyGerada, imageDirective, briefingLivre } = params
+  const {
+    canal,
+    tema,
+    objetivo,
+    persona,
+    brandParams,
+    copyGerada,
+    imageDirective,
+    briefingLivre,
+    promptBlocksConfig,
+  } = params
   const trimmed = copyGerada?.trim() ?? ''
   const directive = imageDirective?.trim() ?? ''
   const { imagem, texto } = trimmed
@@ -493,6 +551,17 @@ export function buildImagePrompt(params: {
         ].filter(Boolean)
       : []
 
+  const briefingFirst = promptBlocksConfig?.priority?.briefingLivreFirst !== false;
+  const briefingPart = briefingLivre?.trim()
+    ? `User direct guidance (highest intent priority): ${briefingLivre.trim().slice(0, 1500)}`
+    : '';
+  const directivePart = directive
+    ? `Primary scene direction (hidden imageDirective): ${directive.slice(0, 1500)}`
+    : '';
+  const priorityParts = briefingFirst
+    ? [briefingPart, directivePart]
+    : [directivePart, briefingPart];
+
   const parts = [
     `Professional marketing visual for ${canal}.`,
     tema ? `Theme: ${tema}.` : '',
@@ -503,10 +572,7 @@ export function buildImagePrompt(params: {
       ? `Brand colors: ${brandParams.color_palette.join(', ')}.`
       : '',
     ...fromStructured,
-    directive ? `Primary scene direction (hidden imageDirective): ${directive.slice(0, 1500)}` : '',
-    briefingLivre?.trim()
-      ? `User direct guidance (highest intent priority): ${briefingLivre.trim().slice(0, 1500)}`
-      : '',
+    ...priorityParts,
     trimmed && fromStructured.length === 0
       ? `Align the visual with this copy (mood and subject, no text in image): ${trimmed.slice(0, 2000)}`
       : '',

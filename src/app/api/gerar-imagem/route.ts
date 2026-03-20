@@ -54,9 +54,13 @@ export async function POST(req: NextRequest) {
 
     const { data: iaConfig } = await supabase
       .from("DB4 - ia_config")
-      .select("system_prompt_img, user_template_img")
+      .select("system_prompt_img, user_template_img, prompt_blocks_json")
       .eq("user_code", CURRENT_USER_CODE)
       .maybeSingle();
+    const promptBlocksConfig =
+      iaConfig?.prompt_blocks_json && typeof iaConfig.prompt_blocks_json === "object"
+        ? iaConfig.prompt_blocks_json
+        : null;
 
     const generateSingle = async (params: {
       slidePrompt?: string;
@@ -72,6 +76,7 @@ export async function POST(req: NextRequest) {
         copyGerada,
         imageDirective: primaryDirection,
         briefingLivre,
+        promptBlocksConfig,
       });
 
       const vars = buildTemplateVars({
@@ -107,8 +112,17 @@ export async function POST(req: NextRequest) {
       const briefingBlock = briefingLivre?.trim()
         ? `User free briefing (priority over style preferences when conflict):\n${briefingLivre.trim()}`
         : "";
+      const briefingFirst =
+        promptBlocksConfig?.priority?.briefingLivreFirst !== false;
       const finalPrompt = templatePrompt || directiveBlock
-        ? [briefingBlock, directiveBlock, alignmentBlock, templatePrompt].filter(Boolean).join("\n\n")
+        ? [
+            briefingFirst ? briefingBlock : directiveBlock,
+            briefingFirst ? directiveBlock : briefingBlock,
+            alignmentBlock,
+            templatePrompt,
+          ]
+            .filter(Boolean)
+            .join("\n\n")
         : fallbackPrompt;
 
       const res = await fetch(

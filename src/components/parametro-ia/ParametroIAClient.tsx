@@ -7,8 +7,10 @@ import {
   DEFAULT_USER_TEMPLATE_TXT,
   DEFAULT_SYSTEM_PROMPT_IMG,
   DEFAULT_USER_TEMPLATE_IMG,
+  PromptBlocksConfig,
 } from "@/lib/prompts";
 import { IAConfig } from "@/lib/types";
+import { getAllVehicleRules } from "@/lib/vehicle-rules";
 
 const MODELS = [
   "llama-3.3-70b-versatile",
@@ -73,6 +75,38 @@ interface Props {
   initialConfig: Partial<IAConfig> | null;
 }
 
+const CHANNELS = ["Instagram", "LinkedIn", "Email", "WhatsApp"] as const;
+const FORMATOS: Record<string, string[]> = {
+  Instagram: ["Post", "Carrossel", "Reels", "Story"],
+  LinkedIn: ["Post", "Carrossel", "Artigo"],
+  Email: ["E-mail único", "Sequência"],
+  WhatsApp: ["Mensagem única", "Sequência"],
+};
+
+function buildDefaultPromptBlocksConfig(): PromptBlocksConfig {
+  const vehicleRules: NonNullable<PromptBlocksConfig["vehicleRules"]> = {};
+  for (const rule of getAllVehicleRules()) {
+    vehicleRules[`${rule.channel}::${rule.format}`] = {
+      outputSchema: rule.outputSchema,
+      copyLimit: rule.copyLimit,
+      criticalPreview: rule.criticalPreview,
+      hookIntent: rule.hookIntent,
+      promptGuide: rule.promptGuide,
+    };
+  }
+  return {
+    vehicleRules,
+    outputContracts: {
+      textOnly: "Retornar apenas conteúdo textual final para publicação.",
+      imageOnly: "Retornar apenas direção visual objetiva para geração de imagem, sem copy pública.",
+      textAndImage: "Retornar JSON estrito com { publico, slides:[{ index, promptImagem }] }.",
+    },
+    priority: {
+      briefingLivreFirst: true,
+    },
+  };
+}
+
 export default function ParametroIAClient({
   userId,
   userCode,
@@ -97,6 +131,15 @@ export default function ParametroIAClient({
     initialConfig?.temperature ?? 0.72
   );
   const [maxTokens, setMaxTokens] = useState(initialConfig?.max_tokens ?? 2048);
+  const [promptBlocksConfig, setPromptBlocksConfig] = useState<PromptBlocksConfig>(() => {
+    const fromDb = initialConfig?.prompt_blocks_json;
+    if (fromDb && typeof fromDb === "object") {
+      return fromDb as PromptBlocksConfig;
+    }
+    return buildDefaultPromptBlocksConfig();
+  });
+  const [selectedChannel, setSelectedChannel] = useState<string>("Instagram");
+  const [selectedFormat, setSelectedFormat] = useState<string>("Post");
   const [isDirty, setIsDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
@@ -117,6 +160,7 @@ export default function ParametroIAClient({
     model,
     temperature,
     maxTokens,
+    promptBlocksConfig,
   ]);
 
   async function handleSave() {
@@ -131,6 +175,7 @@ export default function ParametroIAClient({
       model,
       temperature,
       max_tokens: maxTokens,
+      prompt_blocks_json: promptBlocksConfig,
     };
 
     const { data: existing } = await supabase
@@ -167,6 +212,7 @@ export default function ParametroIAClient({
     setModel("llama-3.3-70b-versatile");
     setTemperature(0.72);
     setMaxTokens(2048);
+    setPromptBlocksConfig(buildDefaultPromptBlocksConfig());
   }
 
   function insertVar(v: string, target: VarTarget) {
@@ -207,6 +253,39 @@ export default function ParametroIAClient({
         ))}
       </div>
     );
+  }
+
+  const selectedRuleKey = `${selectedChannel}::${selectedFormat}`;
+  const selectedRule = promptBlocksConfig.vehicleRules?.[selectedRuleKey] ?? {
+    outputSchema: "",
+    copyLimit: "",
+    criticalPreview: "",
+    hookIntent: "",
+    promptGuide: "",
+  };
+
+  function updateSelectedRule(
+    patch: Partial<{
+      outputSchema: string;
+      copyLimit: string;
+      criticalPreview: string;
+      hookIntent: string;
+      promptGuide: string;
+    }>
+  ) {
+    setPromptBlocksConfig((prev) => ({
+      ...prev,
+      vehicleRules: {
+        ...(prev.vehicleRules ?? {}),
+        [selectedRuleKey]: {
+          outputSchema: patch.outputSchema ?? selectedRule.outputSchema,
+          copyLimit: patch.copyLimit ?? selectedRule.copyLimit,
+          criticalPreview: patch.criticalPreview ?? selectedRule.criticalPreview,
+          hookIntent: patch.hookIntent ?? selectedRule.hookIntent,
+          promptGuide: patch.promptGuide ?? selectedRule.promptGuide,
+        },
+      },
+    }));
   }
 
   return (
@@ -366,6 +445,173 @@ export default function ParametroIAClient({
                 Variáveis — clique para inserir:
               </p>
               {varChipRow(() => true, "img_user")}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-8 bg-white rounded-2xl border border-stone-200 p-6 shadow-sm">
+        <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-5">
+          Blocos estruturados de prompt (A/B/C/D)
+        </label>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-4">
+            <h3 className="text-sm font-semibold text-stone-700">Bloco B - Veículo</h3>
+            <p className="text-xs text-stone-500">
+              Defina regras por canal + formato para guiar schema, limites e gancho.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="text-xs text-stone-500">
+                Canal
+                <select
+                  value={selectedChannel}
+                  onChange={(e) => {
+                    const ch = e.target.value;
+                    setSelectedChannel(ch);
+                    const firstFormat = FORMATOS[ch]?.[0] ?? "";
+                    setSelectedFormat(firstFormat);
+                  }}
+                  className="mt-1 w-full text-sm border border-stone-300 rounded-lg px-2 py-1.5"
+                >
+                  {CHANNELS.map((ch) => (
+                    <option key={ch} value={ch}>{ch}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="text-xs text-stone-500">
+                Formato
+                <select
+                  value={selectedFormat}
+                  onChange={(e) => setSelectedFormat(e.target.value)}
+                  className="mt-1 w-full text-sm border border-stone-300 rounded-lg px-2 py-1.5"
+                >
+                  {(FORMATOS[selectedChannel] ?? []).map((f) => (
+                    <option key={f} value={f}>{f}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="text-xs text-stone-500">
+                Output schema
+                <input
+                  value={selectedRule.outputSchema}
+                  onChange={(e) => updateSelectedRule({ outputSchema: e.target.value })}
+                  className="mt-1 w-full text-sm border border-stone-300 rounded-lg px-2 py-1.5"
+                />
+              </label>
+              <label className="text-xs text-stone-500">
+                Limite de copy
+                <input
+                  value={selectedRule.copyLimit}
+                  onChange={(e) => updateSelectedRule({ copyLimit: e.target.value })}
+                  className="mt-1 w-full text-sm border border-stone-300 rounded-lg px-2 py-1.5"
+                />
+              </label>
+              <label className="text-xs text-stone-500">
+                Preview crítico
+                <input
+                  value={selectedRule.criticalPreview}
+                  onChange={(e) => updateSelectedRule({ criticalPreview: e.target.value })}
+                  className="mt-1 w-full text-sm border border-stone-300 rounded-lg px-2 py-1.5"
+                />
+              </label>
+              <label className="text-xs text-stone-500">
+                Gancho / intenção
+                <input
+                  value={selectedRule.hookIntent}
+                  onChange={(e) => updateSelectedRule({ hookIntent: e.target.value })}
+                  className="mt-1 w-full text-sm border border-stone-300 rounded-lg px-2 py-1.5"
+                />
+              </label>
+            </div>
+            <label className="text-xs text-stone-500 block">
+              Instrução do formato
+              <textarea
+                value={selectedRule.promptGuide}
+                onChange={(e) => updateSelectedRule({ promptGuide: e.target.value })}
+                rows={4}
+                className="mt-1 w-full text-sm border border-stone-300 rounded-lg px-2 py-1.5"
+              />
+            </label>
+          </div>
+
+          <div className="space-y-5">
+            <div>
+              <h3 className="text-sm font-semibold text-stone-700 mb-2">Bloco C - Contrato de saída</h3>
+              <label className="text-xs text-stone-500 block mb-2">
+                Só texto
+                <textarea
+                  value={promptBlocksConfig.outputContracts?.textOnly ?? ""}
+                  onChange={(e) =>
+                    setPromptBlocksConfig((prev) => ({
+                      ...prev,
+                      outputContracts: {
+                        ...(prev.outputContracts ?? {}),
+                        textOnly: e.target.value,
+                      },
+                    }))
+                  }
+                  rows={2}
+                  className="mt-1 w-full text-sm border border-stone-300 rounded-lg px-2 py-1.5"
+                />
+              </label>
+              <label className="text-xs text-stone-500 block mb-2">
+                Só imagem
+                <textarea
+                  value={promptBlocksConfig.outputContracts?.imageOnly ?? ""}
+                  onChange={(e) =>
+                    setPromptBlocksConfig((prev) => ({
+                      ...prev,
+                      outputContracts: {
+                        ...(prev.outputContracts ?? {}),
+                        imageOnly: e.target.value,
+                      },
+                    }))
+                  }
+                  rows={2}
+                  className="mt-1 w-full text-sm border border-stone-300 rounded-lg px-2 py-1.5"
+                />
+              </label>
+              <label className="text-xs text-stone-500 block">
+                Texto e imagem
+                <textarea
+                  value={promptBlocksConfig.outputContracts?.textAndImage ?? ""}
+                  onChange={(e) =>
+                    setPromptBlocksConfig((prev) => ({
+                      ...prev,
+                      outputContracts: {
+                        ...(prev.outputContracts ?? {}),
+                        textAndImage: e.target.value,
+                      },
+                    }))
+                  }
+                  rows={3}
+                  className="mt-1 w-full text-sm border border-stone-300 rounded-lg px-2 py-1.5"
+                />
+              </label>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold text-stone-700 mb-2">Bloco D - Prioridade</h3>
+              <label className="inline-flex items-center gap-2 text-xs text-stone-600">
+                <input
+                  type="checkbox"
+                  checked={promptBlocksConfig.priority?.briefingLivreFirst !== false}
+                  onChange={(e) =>
+                    setPromptBlocksConfig((prev) => ({
+                      ...prev,
+                      priority: {
+                        ...(prev.priority ?? {}),
+                        briefingLivreFirst: e.target.checked,
+                      },
+                    }))
+                  }
+                  className="accent-[#1a6b5a]"
+                />
+                Briefing livre vem antes das demais regras
+              </label>
             </div>
           </div>
         </div>

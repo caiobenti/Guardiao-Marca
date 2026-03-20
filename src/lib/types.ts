@@ -49,4 +49,5 @@ export interface IAConfig {
   model: string;
   temperature: number;
   max_tokens: number;
+  prompt_blocks_json?: unknown;
 }
