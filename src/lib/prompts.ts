@@ -15,7 +15,6 @@
 // ───────────────────────────────────────────────────────────────────────────
 
 import { ICPArchetype, BrandParameters } from "./types";
-import { getVehicleRule } from "./vehicle-rules";
 
 // ─── Defaults editáveis via /parametro-ia ──────────────────────────────────
 // Estes textos são o ponto de partida do editor. O usuário pode modificá-los
@@ -411,7 +410,6 @@ function resolveOutputContract(
 export function buildPromptBlocks(params: UserPromptParams): PromptBlocks {
   const key = `${params.canal}::${params.formato}`;
   const customRule = params.promptBlocksConfig?.vehicleRules?.[key];
-  const fallbackRule = getVehicleRule(params.canal, params.formato);
   const rule = customRule
     ? {
         outputSchema: customRule.outputSchema,
@@ -420,7 +418,7 @@ export function buildPromptBlocks(params: UserPromptParams): PromptBlocks {
         hookIntent: customRule.hookIntent,
         promptGuide: customRule.promptGuide,
       }
-    : fallbackRule;
+    : null;
   const ruleSummary = rule
     ? `Schema: ${rule.outputSchema}\nLimite: ${rule.copyLimit}\nPreview crítico: ${rule.criticalPreview}\nGancho: ${rule.hookIntent}\nInstrução: ${rule.promptGuide}`
     : "Sem regra específica para este veículo/formato. Use boas práticas do canal.";

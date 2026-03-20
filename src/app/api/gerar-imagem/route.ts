@@ -57,10 +57,43 @@ export async function POST(req: NextRequest) {
       .select("system_prompt_img, user_template_img, prompt_blocks_json")
       .eq("user_code", CURRENT_USER_CODE)
       .maybeSingle();
-    const promptBlocksConfig =
+    const storedPromptBlocksConfig =
       iaConfig?.prompt_blocks_json && typeof iaConfig.prompt_blocks_json === "object"
         ? iaConfig.prompt_blocks_json
         : null;
+    const { data: vehicleRule } = await supabase
+      .from("DB5 - ia_vehicle_rules")
+      .select("output_schema, copy_limit, critical_preview, hook, intent, prompt_guide")
+      .eq("user_code", CURRENT_USER_CODE)
+      .eq("channel", canal)
+      .eq("format", formato ?? "")
+      .maybeSingle();
+
+    if (!vehicleRule) {
+      return NextResponse.json(
+        {
+          error: `Regra do Bloco B não encontrada em DB5 para ${canal} / ${formato ?? "sem formato"}. Configure em setup/parâmetros de IA.`,
+        },
+        { status: 422 }
+      );
+    }
+
+    const vehicleRuleKey = `${canal}::${formato ?? ""}`;
+    const promptBlocksConfig = {
+      ...(storedPromptBlocksConfig ?? {}),
+      vehicleRules: {
+        ...(storedPromptBlocksConfig?.vehicleRules ?? {}),
+        [vehicleRuleKey]: {
+          outputSchema: vehicleRule.output_schema,
+          copyLimit: vehicleRule.copy_limit,
+          criticalPreview: vehicleRule.critical_preview,
+          hookIntent: vehicleRule.hook,
+          promptGuide: [vehicleRule.intent, vehicleRule.prompt_guide]
+            .filter(Boolean)
+            .join(" | "),
+        },
+      },
+    };
 
     const generateSingle = async (params: {
       slidePrompt?: string;

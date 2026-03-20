@@ -84,10 +84,43 @@ export async function POST(req: NextRequest) {
     const model       = iaConfig?.model       || "llama-3.3-70b-versatile";
     const temperature = iaConfig?.temperature ?? 0.72;
     const maxTokens   = iaConfig?.max_tokens  ?? 2048;
-    const promptBlocksConfig =
+    const storedPromptBlocksConfig =
       iaConfig?.prompt_blocks_json && typeof iaConfig.prompt_blocks_json === "object"
         ? iaConfig.prompt_blocks_json
         : null;
+    const { data: vehicleRule } = await supabase
+      .from("DB5 - ia_vehicle_rules")
+      .select("output_schema, copy_limit, critical_preview, hook, intent, prompt_guide")
+      .eq("user_code", CURRENT_USER_CODE)
+      .eq("channel", body.canal)
+      .eq("format", body.formato)
+      .maybeSingle();
+
+    if (!vehicleRule) {
+      return NextResponse.json(
+        {
+          error: `Regra do Bloco B não encontrada em DB5 para ${body.canal} / ${body.formato}. Configure em setup/parâmetros de IA.`,
+        },
+        { status: 422 }
+      );
+    }
+
+    const vehicleRuleKey = `${body.canal}::${body.formato}`;
+    const promptBlocksConfig = {
+      ...(storedPromptBlocksConfig ?? {}),
+      vehicleRules: {
+        ...(storedPromptBlocksConfig?.vehicleRules ?? {}),
+        [vehicleRuleKey]: {
+          outputSchema: vehicleRule.output_schema,
+          copyLimit: vehicleRule.copy_limit,
+          criticalPreview: vehicleRule.critical_preview,
+          hookIntent: vehicleRule.hook,
+          promptGuide: [vehicleRule.intent, vehicleRule.prompt_guide]
+            .filter(Boolean)
+            .join(" | "),
+        },
+      },
+    };
 
     // Build prompts: use DB4 custom template if saved, otherwise built-in functions
     let systemPrompt: string;
