@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { EditableTextLayer, SlideLayerEditor } from "@/components/editor/SlideLayerEditor";
 
 interface OutputSlide {
@@ -45,12 +45,10 @@ export function PainelOutput({
   promptImagemDebug,
   brandColorShortcuts,
 }: Props) {
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingSlideIndex, setEditingSlideIndex] = useState(1);
   const [savedLayersBySlide, setSavedLayersBySlide] = useState<
     Record<number, EditableTextLayer[]>
   >({});
-  const lastAutoOpenSignature = useRef("");
   const displaySlides = outputSlides.length > 0
     ? outputSlides
     : outputImagem
@@ -58,19 +56,10 @@ export function PainelOutput({
       : [];
   const activeSavedLayers = savedLayersBySlide[editingSlideIndex] ?? [];
 
-  // Auto-open no primeiro slide assim que as imagens chegarem.
+  // Seleciona o primeiro slide assim que as imagens chegarem.
   useEffect(() => {
-    const signature =
-      displaySlides.length > 0
-        ? displaySlides.map((s) => `${s.index}:${s.imageUrl.slice(0, 32)}`).join("|")
-        : "";
-    if (displaySlides.length > 0 && signature !== lastAutoOpenSignature.current) {
-      lastAutoOpenSignature.current = signature;
-      setIsEditorOpen(true);
+    if (displaySlides.length > 0) {
       setEditingSlideIndex(displaySlides[0].index);
-    }
-    if (displaySlides.length === 0) {
-      lastAutoOpenSignature.current = "";
     }
   }, [displaySlides]);
 
@@ -203,7 +192,6 @@ export function PainelOutput({
                             type="button"
                             onClick={() => {
                               setEditingSlideIndex(slide.index);
-                              setIsEditorOpen(true);
                             }}
                             className="text-xs text-[#1a6b5a] hover:underline"
                           >
@@ -234,24 +222,27 @@ export function PainelOutput({
               <div className="bg-white rounded-[10px] border border-[#e8e8e4] p-8" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Editor de IMG</span>
-                  <button
-                    type="button"
-                    onClick={() => setIsEditorOpen(true)}
-                    disabled={displaySlides.length === 0}
-                    className="text-xs text-[#1a6b5a] hover:underline disabled:opacity-40"
-                  >
-                    Abrir editor
-                  </button>
                 </div>
-                <p className="text-sm text-gray-500 mb-3">
-                  Quando clicar em editar, o editor abre em tela cheia com camadas.
-                </p>
-                {activeSavedLayers.length > 0 ? (
-                  <div className="space-y-2">
+                {displaySlides.length > 0 ? (
+                  <SlideLayerEditor
+                    slides={displaySlides}
+                    currentSlideIndex={editingSlideIndex}
+                    onChangeSlide={setEditingSlideIndex}
+                    brandColorShortcuts={brandColorShortcuts}
+                    initialLayersBySlide={savedLayersBySlide}
+                    onSave={setSavedLayersBySlide}
+                    onClose={() => {}}
+                    showCloseButton={false}
+                  />
+                ) : (
+                  <p className="text-xs text-stone-400">Gere uma imagem para começar a editar.</p>
+                )}
+                {activeSavedLayers.length > 0 && (
+                  <div className="mt-3 space-y-2">
                     <p className="text-xs text-stone-500 font-medium">
                       Textos salvos no slide {editingSlideIndex}
                     </p>
-                    <div className="max-h-56 overflow-auto border border-stone-200 rounded-lg p-2">
+                    <div className="max-h-36 overflow-auto border border-stone-200 rounded-lg p-2">
                       {activeSavedLayers.map((l) => (
                         <p key={l.id} className="text-xs text-stone-600 py-1 border-b last:border-b-0 border-stone-100">
                           {l.text || "(sem texto)"}
@@ -259,8 +250,6 @@ export function PainelOutput({
                       ))}
                     </div>
                   </div>
-                ) : (
-                  <p className="text-xs text-stone-400">Nenhum texto salvo ainda.</p>
                 )}
               </div>
             )}
@@ -268,17 +257,6 @@ export function PainelOutput({
           </div>
         )}
       </div>
-      {isEditorOpen && displaySlides.length > 0 && (
-        <SlideLayerEditor
-          slides={displaySlides}
-          currentSlideIndex={editingSlideIndex}
-          onChangeSlide={setEditingSlideIndex}
-          brandColorShortcuts={brandColorShortcuts}
-          initialLayersBySlide={savedLayersBySlide}
-          onSave={setSavedLayersBySlide}
-          onClose={() => setIsEditorOpen(false)}
-        />
-      )}
     </div>
   );
 }

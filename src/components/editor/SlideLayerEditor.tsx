@@ -34,6 +34,7 @@ interface Props {
   initialLayersBySlide?: Record<number, EditableTextLayer[]>;
   onSave?: (layersBySlide: Record<number, EditableTextLayer[]>) => void;
   onClose: () => void;
+  showCloseButton?: boolean;
 }
 
 const CANVAS_WIDTH = 1024;
@@ -47,6 +48,7 @@ export function SlideLayerEditor({
   initialLayersBySlide,
   onSave,
   onClose,
+  showCloseButton = true,
 }: Props) {
   const stageRef = useRef<Konva.Stage>(null);
   const groupRef = useRef<Konva.Group>(null);
@@ -183,106 +185,107 @@ export function SlideLayerEditor({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-6">
-      <div className="w-full max-w-[1400px] max-h-[95vh] bg-white rounded-xl border border-stone-200 overflow-hidden grid grid-cols-[1fr_360px]">
-        <div className="p-4 overflow-auto bg-stone-100">
-          <div className="mx-auto w-max">
-            <Stage
-              ref={stageRef}
-              width={CANVAS_WIDTH}
-              height={CANVAS_HEIGHT}
-              onMouseDown={(e) => {
-                if (e.target === e.target.getStage()) setSelectedId(null);
-              }}
-              className="bg-white border border-stone-300"
-            >
-              <Layer>
-                {bgImage && (
-                  <KonvaImage image={bgImage} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} />
-                )}
-              </Layer>
-              <Layer>
-                {layers.map((layer) => {
-                  const isSelected = layer.id === selectedId;
-                  const textHeight = Math.ceil(layer.fontSize * 1.25);
-                  const boxHeight = textHeight + layer.paddingY * 2;
-                  return (
-                    <Group
-                      key={layer.id}
-                      ref={isSelected ? groupRef : undefined}
-                      x={layer.x}
-                      y={layer.y}
-                      draggable={!layer.locked}
-                      opacity={layer.opacity}
-                      onClick={() => setSelectedId(layer.id)}
-                      onTap={() => setSelectedId(layer.id)}
-                      onDragEnd={(e) => {
-                        setCurrentLayers((prev) =>
-                          prev.map((l) =>
-                            l.id === layer.id ? { ...l, x: e.target.x(), y: e.target.y() } : l
-                          )
-                        );
-                      }}
-                      onTransformEnd={(e) => {
-                        const node = e.target as Konva.Group;
-                        const scaleX = node.scaleX();
-                        const scaleY = node.scaleY();
-                        node.scaleX(1);
-                        node.scaleY(1);
-                        setCurrentLayers((prev) =>
-                          prev.map((l) =>
-                            l.id === layer.id
-                              ? {
-                                  ...l,
-                                  x: node.x(),
-                                  y: node.y(),
-                                  width: Math.max(120, l.width * scaleX),
-                                  fontSize: Math.max(14, Math.round(l.fontSize * scaleY)),
-                                }
-                              : l
-                          )
-                        );
-                      }}
-                    >
-                      <Rect
-                        x={0}
-                        y={0}
-                        width={layer.width + layer.paddingX * 2}
-                        height={boxHeight}
-                        cornerRadius={layer.radius}
-                        fill={layer.bgColor}
-                        opacity={layer.bgOpacity}
-                      />
-                      <Text
-                        text={layer.text}
-                        x={layer.paddingX}
-                        y={layer.paddingY}
-                        width={layer.width}
-                        fontSize={layer.fontSize}
-                        fill={layer.textColor}
-                        fontFamily="Inter, sans-serif"
-                      />
-                    </Group>
-                  );
-                })}
-                {selectedId && (
-                  <Transformer
-                    ref={transformerRef}
-                    rotateEnabled={false}
-                    enabledAnchors={["top-left", "top-right", "bottom-left", "bottom-right"]}
-                  />
-                )}
-              </Layer>
-            </Stage>
-          </div>
+    <div className="h-full min-h-0 flex flex-col gap-3">
+      <div className="rounded-lg border border-stone-200 bg-stone-100 p-2 overflow-auto">
+        <div className="w-full flex justify-center">
+          <Stage
+            ref={stageRef}
+            width={CANVAS_WIDTH}
+            height={CANVAS_HEIGHT}
+            scaleX={0.26}
+            scaleY={0.26}
+            onMouseDown={(e) => {
+              if (e.target === e.target.getStage()) setSelectedId(null);
+            }}
+            className="bg-white border border-stone-300 origin-top"
+          >
+            <Layer>
+              {bgImage && (
+                <KonvaImage image={bgImage} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} />
+              )}
+            </Layer>
+            <Layer>
+              {layers.map((layer) => {
+                const isSelected = layer.id === selectedId;
+                const textHeight = Math.ceil(layer.fontSize * 1.25);
+                const boxHeight = textHeight + layer.paddingY * 2;
+                return (
+                  <Group
+                    key={layer.id}
+                    ref={isSelected ? groupRef : undefined}
+                    x={layer.x}
+                    y={layer.y}
+                    draggable={!layer.locked}
+                    opacity={layer.opacity}
+                    onClick={() => setSelectedId(layer.id)}
+                    onTap={() => setSelectedId(layer.id)}
+                    onDragEnd={(e) => {
+                      setCurrentLayers((prev) =>
+                        prev.map((l) =>
+                          l.id === layer.id ? { ...l, x: e.target.x(), y: e.target.y() } : l
+                        )
+                      );
+                    }}
+                    onTransformEnd={(e) => {
+                      const node = e.target as Konva.Group;
+                      const scaleX = node.scaleX();
+                      const scaleY = node.scaleY();
+                      node.scaleX(1);
+                      node.scaleY(1);
+                      setCurrentLayers((prev) =>
+                        prev.map((l) =>
+                          l.id === layer.id
+                            ? {
+                                ...l,
+                                x: node.x(),
+                                y: node.y(),
+                                width: Math.max(120, l.width * scaleX),
+                                fontSize: Math.max(14, Math.round(l.fontSize * scaleY)),
+                              }
+                            : l
+                        )
+                      );
+                    }}
+                  >
+                    <Rect
+                      x={0}
+                      y={0}
+                      width={layer.width + layer.paddingX * 2}
+                      height={boxHeight}
+                      cornerRadius={layer.radius}
+                      fill={layer.bgColor}
+                      opacity={layer.bgOpacity}
+                    />
+                    <Text
+                      text={layer.text}
+                      x={layer.paddingX}
+                      y={layer.paddingY}
+                      width={layer.width}
+                      fontSize={layer.fontSize}
+                      fill={layer.textColor}
+                      fontFamily="Inter, sans-serif"
+                    />
+                  </Group>
+                );
+              })}
+              {selectedId && (
+                <Transformer
+                  ref={transformerRef}
+                  rotateEnabled={false}
+                  enabledAnchors={["top-left", "top-right", "bottom-left", "bottom-right"]}
+                />
+              )}
+            </Layer>
+          </Stage>
         </div>
+      </div>
 
-        <aside className="border-l border-stone-200 p-4 flex flex-col gap-4 overflow-y-auto bg-white">
-          <div>
-            <h3 className="text-sm font-semibold text-stone-800">Editor do Slide {currentSlide.index}</h3>
-            <p className="text-xs text-stone-500 mt-1">Adicione camadas de texto e exporte PNG unificado.</p>
-          </div>
-          <div className="flex items-center gap-2">
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-3">
+        <div>
+          <h3 className="text-sm font-semibold text-stone-800">Editor do Slide {currentSlide.index}</h3>
+          <p className="text-xs text-stone-500 mt-1">Edite camadas e salve sem sair da tela.</p>
+        </div>
+        <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={prevSlide}
@@ -299,8 +302,8 @@ export function SlideLayerEditor({
             >
               Próximo slide
             </button>
-          </div>
-          <div className="flex gap-2">
+        </div>
+        <div className="flex gap-2">
             <button
               type="button"
               onClick={addTextLayer}
@@ -324,9 +327,9 @@ export function SlideLayerEditor({
             >
               Remover
             </button>
-          </div>
-          {selectedLayer && (
-            <div className="space-y-3">
+        </div>
+        {selectedLayer && (
+          <div className="space-y-3">
               <label className="block text-xs text-stone-500">
                 Conteúdo
                 <textarea
@@ -470,9 +473,9 @@ export function SlideLayerEditor({
                   Enviar trás
                 </button>
               </div>
-            </div>
-          )}
-          <div className="mt-auto flex gap-2">
+          </div>
+        )}
+        <div className="pt-2 flex gap-2">
             <button
               type="button"
               onClick={saveEdition}
@@ -487,16 +490,17 @@ export function SlideLayerEditor({
             >
               Exportar PNG
             </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-3 py-2 rounded-lg text-xs border border-stone-300"
-            >
-              Fechar
-            </button>
-          </div>
-          {saveMsg && <p className="text-xs text-[#1a6b5a] font-medium">{saveMsg}</p>}
-        </aside>
+            {showCloseButton && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-3 py-2 rounded-lg text-xs border border-stone-300"
+              >
+                Fechar
+              </button>
+            )}
+        </div>
+        {saveMsg && <p className="text-xs text-[#1a6b5a] font-medium">{saveMsg}</p>}
       </div>
     </div>
   );
