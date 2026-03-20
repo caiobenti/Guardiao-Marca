@@ -20,46 +20,42 @@ export async function POST(req: NextRequest) {
 
     const prompt = buildImagePrompt({ canal, tema, objetivo, persona, brandParams });
 
-    // Gemini 2.5 Flash Image — geração nativa de imagem (free tier)
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`,
+    // Imagen 4 Fast — 25 req/dia no free tier
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { responseModalities: ["IMAGE"] },
+          instances: [{ prompt }],
+          parameters: { sampleCount: 1, aspectRatio: "1:1" },
         }),
       }
     );
 
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text();
-      console.error("[api/gerar-imagem] Gemini error:", geminiRes.status, errText);
-      let msg = `Status ${geminiRes.status}`;
-      try {
-        const errJson = JSON.parse(errText);
-        msg = errJson?.error?.message ?? msg;
-      } catch { /* keep default */ }
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error("[api/gerar-imagem] error:", res.status, errText);
+      let msg = `Status ${res.status}`;
+      try { msg = JSON.parse(errText)?.error?.message ?? msg; } catch { /* ok */ }
       return NextResponse.json({ error: msg }, { status: 500 });
     }
 
-    const data = await geminiRes.json();
-    const parts = data?.candidates?.[0]?.content?.parts ?? [];
-    const imagePart = parts.find((p: { inlineData?: { mimeType: string; data: string } }) => p.inlineData);
+    const data = await res.json();
+    const prediction = data?.predictions?.[0];
 
-    if (!imagePart?.inlineData) {
-      console.error("[api/gerar-imagem] Unexpected response:", JSON.stringify(data));
+    if (!prediction?.bytesBase64Encoded) {
+      console.error("[api/gerar-imagem] no image in response:", JSON.stringify(data));
       return NextResponse.json({ error: "Nenhuma imagem retornada." }, { status: 500 });
     }
 
-    const { mimeType, data: base64 } = imagePart.inlineData;
-    const imageUrl = `data:${mimeType};base64,${base64}`;
-
-    return NextResponse.json({ imageUrl });
+    const mimeType = prediction.mimeType ?? "image/png";
+    return NextResponse.json({
+      imageUrl: `data:${mimeType};base64,${prediction.bytesBase64Encoded}`,
+    });
   } catch (err: unknown) {
-    console.error("[api/gerar-imagem] error:", err);
     const message = err instanceof Error ? err.message : String(err);
+    console.error("[api/gerar-imagem]", message);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
