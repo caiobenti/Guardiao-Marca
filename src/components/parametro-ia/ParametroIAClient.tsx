@@ -18,6 +18,11 @@ const MODELS = [
 ];
 
 const COPY_GERADA = "{{copy_gerada}}";
+const COPY_IMAGEM = "{{copy_imagem}}";
+const COPY_TEXTO = "{{copy_texto}}";
+
+/** Variáveis só preenchidas no fluxo texto → imagem (não usar em template de texto). */
+const IMG_FLOW_VARS = [COPY_GERADA, COPY_IMAGEM, COPY_TEXTO];
 
 const AVAILABLE_VARS = [
   "{{canal}}",
@@ -38,6 +43,8 @@ const AVAILABLE_VARS = [
   "{{dna_tipografia}}",
   "{{dna_estilo_imagem}}",
   COPY_GERADA,
+  COPY_IMAGEM,
+  COPY_TEXTO,
 ];
 
 const SYSTEM_VAR_PICK = [
@@ -294,7 +301,7 @@ export default function ParametroIAClient({
               <p className="text-xs text-stone-400 mb-2 font-medium">
                 Variáveis — clique para inserir:
               </p>
-              {varChipRow((v) => v !== COPY_GERADA, "txt_user")}
+              {varChipRow((v) => !IMG_FLOW_VARS.includes(v), "txt_user")}
             </div>
           </div>
         </div>

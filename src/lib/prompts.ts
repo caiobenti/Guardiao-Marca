@@ -60,6 +60,8 @@ O que mais valoriza: {{persona_valor}}
 ## Tema / Assunto
 {{tema}}
 
+Se o estilo de mídia for "Texto e imagem", em cada slide numerado inclua **Imagem:** (direção visual, cores) e **Texto:** (copy). O primeiro slide alimenta a geração de arte.
+
 ---
 Crie o conteúdo agora. Entregue direto, sem preâmbulos.`
 
@@ -70,7 +72,8 @@ Output only the image prompt — no explanations, no commentary.
 Guidelines:
 - Describe composition, lighting, mood, color palette and visual style
 - Be specific (e.g., "warm golden hour lighting", "clean white studio background")
-- When published copy is provided, the scene should visually support that message (tone, subject, metaphor) without rendering the text as typographic overlay
+- When the brief separates **Imagem:** (visual direction) and **Texto:** (headline), treat **Imagem:** as the primary scene description and **Texto:** as tone/hook only — never draw the headline as lettering unless asked
+- When only a single block of copy is provided, align mood and subject with that text without rendering it as typography
 - No text overlays unless explicitly requested
 - Optimize for 1:1 square format
 - Match brand colors and visual style when provided`
@@ -83,7 +86,13 @@ Brand colors: {{dna_cores}}
 Visual style: {{dna_estilo_imagem}}
 Mood: {{voz_tom}}
 
-Published copy to align the visual with (filled after text generation in "Texto e imagem"):
+First slide — visual direction (from **Imagem:** in generated copy, if present):
+{{copy_imagem}}
+
+First slide — headline tone (from **Texto:**, do not render as text in the image):
+{{copy_texto}}
+
+Full generated copy (reference):
 {{copy_gerada}}
 
 Generate a square (1:1) marketing image prompt.`
@@ -97,6 +106,54 @@ export function buildPromptFromTemplate(
   vars: Record<string, string>
 ): string {
   return template.replace(/\{\{(\w+)\}\}/g, (_, key) => vars[key] ?? `{{${key}}}`)
+}
+
+/**
+ * Extrai do copy gerado (ex. carrossel) o primeiro bloco **Imagem:** / **Texto:** ou Imagem:/Texto:.
+ * Usado para alimentar a geração de imagem com a direção visual e o gancho textual separados.
+ */
+export function parseCopyForImageGeneration(copy: string): {
+  imagem: string
+  texto: string
+} {
+  let imagem = ""
+  let texto = ""
+  let mode: "none" | "imagem" | "texto" = "none"
+  const lines = copy.split(/\r?\n/)
+  const slideRe = /^slide\s+\d+\s*:?\s*$/i
+  const imagemRe = /^(\*{0,2})\s*Imagem:\s*(\*{0,2})\s*(.*)$/i
+  const textoRe = /^(\*{0,2})\s*Texto:\s*(\*{0,2})\s*(.*)$/i
+
+  for (const raw of lines) {
+    const line = raw.trim()
+    if (slideRe.test(line)) {
+      if (imagem !== "" || texto !== "") break
+      mode = "none"
+      continue
+    }
+
+    const im = line.match(imagemRe)
+    if (im) {
+      mode = "imagem"
+      const rest = (im[3] ?? "").trim()
+      if (rest) imagem += rest + " "
+      continue
+    }
+
+    const tx = line.match(textoRe)
+    if (tx) {
+      mode = "texto"
+      const rest = (tx[3] ?? "").trim()
+      if (rest) texto += rest + " "
+      continue
+    }
+
+    if (line === "") continue
+    if (mode === "imagem") imagem += line + " "
+    if (mode === "texto") texto += line + " "
+  }
+
+  return { imagem: imagem.trim(), texto: texto.trim() }
 }
 
 // ─── Mapa de variáveis a partir dos dados do formulário e da marca ─────────
@@ -114,6 +171,10 @@ export function buildTemplateVars(params: {
 }): Record<string, string> {
   const { canal, formato, estilo, objetivo, tema, persona, brandParams, copyGerada } =
     params
+  const trimmed = copyGerada?.trim() ?? ''
+  const { imagem, texto } = trimmed
+    ? parseCopyForImageGeneration(trimmed)
+    : { imagem: '', texto: '' }
   return {
     canal,
     formato,
@@ -132,7 +193,9 @@ export function buildTemplateVars(params: {
     dna_cores: (brandParams?.color_palette ?? []).join(', '),
     dna_tipografia: brandParams?.typography ?? '',
     dna_estilo_imagem: brandParams?.image_style ?? '',
-    copy_gerada: copyGerada?.trim() ?? '',
+    copy_gerada: trimmed,
+    copy_imagem: imagem,
+    copy_texto: texto,
   }
 }
 
@@ -227,7 +290,7 @@ ${dnaSection}
 - Respeite rigorosamente as regras de formato do canal informado no briefing.
 - Se houver persona definida, escreva diretamente para ela — use as dores e a proposta de valor como alavancas narrativas.
 - Se o formato pedir múltiplas peças (carrossel, sequência de e-mails, sequência de mensagens), entregue todas completas e numeradas.
-- Quando o estilo for "Só texto", não mencione elementos visuais. Quando for "Texto e imagem", sugira brevemente o visual de cada bloco entre colchetes: [Sugestão visual: ...].
+- Quando o estilo for "Só texto", não mencione elementos visuais. Quando for "Texto e imagem", em cada slide ou bloco use as linhas **Imagem:** (direção visual para geração de arte, com cores e composição) e **Texto:** (copy do slide); em peça única, um par **Imagem:** / **Texto:** basta.
 - Entregue o conteúdo completo. Nunca trunque com "...".
 `.trim();
 }
@@ -257,6 +320,17 @@ Nenhuma persona específica selecionada. Escreva para o público geral da marca.
 
   const canalCtx = CANAL_CONTEXT[canal] ?? "";
 
+  const instrImagemTexto =
+    estilo === "Texto e imagem"
+      ? `
+
+## Direção visual + copy (obrigatório neste estilo)
+Em cada slide numerado (ou no único bloco), inclua exatamente:
+**Imagem:** descrição da cena para uma IA de imagem (composição, iluminação, elementos, cores hex quando fizer sentido).
+**Texto:** a mensagem/copy daquele slide (gancho, CTA, etc.).
+O pipeline de produto usa o primeiro slide para gerar a arte — seja explícito no **Imagem:** do slide 1.`
+      : "";
+
   return `
 ## Briefing de conteúdo
 
@@ -271,6 +345,7 @@ ${objetivo.trim() || "Não especificado. Use seu julgamento com base no tema e n
 
 ## Tema / Assunto
 ${tema.trim()}
+${instrImagemTexto}
 
 ## Regras do canal (${canal})
 ${canalCtx}
@@ -289,6 +364,23 @@ export function buildImagePrompt(params: {
   copyGerada?: string
 }): string {
   const { canal, tema, objetivo, persona, brandParams, copyGerada } = params
+  const trimmed = copyGerada?.trim() ?? ''
+  const { imagem, texto } = trimmed
+    ? parseCopyForImageGeneration(trimmed)
+    : { imagem: '', texto: '' }
+
+  const fromStructured =
+    imagem || texto
+      ? [
+          imagem
+            ? `Primary scene (from Imagem:): ${imagem.slice(0, 1500)}`
+            : '',
+          texto
+            ? `Headline hook / emotional tone (from Texto:, not as on-image text): ${texto.slice(0, 500)}`
+            : '',
+        ].filter(Boolean)
+      : []
+
   const parts = [
     `Professional marketing visual for ${canal}.`,
     tema ? `Theme: ${tema}.` : '',
@@ -298,8 +390,9 @@ export function buildImagePrompt(params: {
     brandParams?.color_palette?.length
       ? `Brand colors: ${brandParams.color_palette.join(', ')}.`
       : '',
-    copyGerada?.trim()
-      ? `Align the visual with this copy (mood and subject, no text in image): ${copyGerada.trim().slice(0, 2000)}`
+    ...fromStructured,
+    trimmed && fromStructured.length === 0
+      ? `Align the visual with this copy (mood and subject, no text in image): ${trimmed.slice(0, 2000)}`
       : '',
     'Clean, high quality, modern design. No text overlays.',
   ].filter(Boolean)
