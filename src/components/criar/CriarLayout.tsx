@@ -39,36 +39,105 @@ export function CriarLayout({ icps, brandParams }: Props) {
     const gerarTexto = estilo !== "Só imagem";
     const gerarImagem = estilo === "Só imagem" || estilo === "Texto e imagem";
 
+    const imageBodyBase = {
+      canal,
+      tema,
+      objetivo,
+      persona,
+      brandParams: brandParams ?? null,
+      formato,
+      estilo,
+    };
+
+    if (gerarTexto && gerarImagem) {
+      setLoadingTexto(true);
+      let imagePhase = false;
+      try {
+        const rText = await fetch("/api/gerar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            persona,
+            canal,
+            formato,
+            estilo,
+            objetivo,
+            tema,
+            brandParams,
+          }),
+        });
+        const dataText = await rText.json();
+        if (dataText.error) {
+          setErroTexto(dataText.error);
+          return;
+        }
+        const content = dataText.content ?? "";
+        setOutputTexto(content);
+
+        imagePhase = true;
+        setLoadingImagem(true);
+        const rImg = await fetch("/api/gerar-imagem", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...imageBodyBase, copyGerada: content }),
+        });
+        const dataImg = await rImg.json();
+        if (dataImg.error) setErroImagem(dataImg.error);
+        else setOutputImagem(dataImg.imageUrl ?? "");
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (imagePhase) setErroImagem(msg);
+        else setErroTexto(msg);
+      } finally {
+        setLoadingTexto(false);
+        setLoadingImagem(false);
+      }
+      return;
+    }
+
     if (gerarTexto) {
       setLoadingTexto(true);
-      fetch("/api/gerar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ persona, canal, formato, estilo, objetivo, tema, brandParams }),
-      })
-        .then(r => r.json())
-        .then(data => {
-          if (data.error) setErroTexto(data.error);
-          else setOutputTexto(data.content ?? "");
-        })
-        .catch(e => setErroTexto(e.message))
-        .finally(() => setLoadingTexto(false));
+      try {
+        const r = await fetch("/api/gerar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            persona,
+            canal,
+            formato,
+            estilo,
+            objetivo,
+            tema,
+            brandParams,
+          }),
+        });
+        const data = await r.json();
+        if (data.error) setErroTexto(data.error);
+        else setOutputTexto(data.content ?? "");
+      } catch (e) {
+        setErroTexto(e instanceof Error ? e.message : String(e));
+      } finally {
+        setLoadingTexto(false);
+      }
+      return;
     }
 
     if (gerarImagem) {
       setLoadingImagem(true);
-      fetch("/api/gerar-imagem", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ canal, tema, objetivo, persona, brandParams }),
-      })
-        .then(r => r.json())
-        .then(data => {
-          if (data.error) setErroImagem(data.error);
-          else setOutputImagem(data.imageUrl ?? "");
-        })
-        .catch(e => setErroImagem(e.message))
-        .finally(() => setLoadingImagem(false));
+      try {
+        const r = await fetch("/api/gerar-imagem", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(imageBodyBase),
+        });
+        const data = await r.json();
+        if (data.error) setErroImagem(data.error);
+        else setOutputImagem(data.imageUrl ?? "");
+      } catch (e) {
+        setErroImagem(e instanceof Error ? e.message : String(e));
+      } finally {
+        setLoadingImagem(false);
+      }
     }
   }
 

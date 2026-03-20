@@ -17,6 +17,8 @@ const MODELS = [
   "gemma2-9b-it",
 ];
 
+const COPY_GERADA = "{{copy_gerada}}";
+
 const AVAILABLE_VARS = [
   "{{canal}}",
   "{{formato}}",
@@ -35,6 +37,7 @@ const AVAILABLE_VARS = [
   "{{dna_cores}}",
   "{{dna_tipografia}}",
   "{{dna_estilo_imagem}}",
+  COPY_GERADA,
 ];
 
 const SYSTEM_VAR_PICK = [
@@ -291,7 +294,7 @@ export default function ParametroIAClient({
               <p className="text-xs text-stone-400 mb-2 font-medium">
                 Variáveis — clique para inserir:
               </p>
-              {varChipRow(() => true, "txt_user")}
+              {varChipRow((v) => v !== COPY_GERADA, "txt_user")}
             </div>
           </div>
         </div>

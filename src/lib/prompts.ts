@@ -70,6 +70,7 @@ Output only the image prompt — no explanations, no commentary.
 Guidelines:
 - Describe composition, lighting, mood, color palette and visual style
 - Be specific (e.g., "warm golden hour lighting", "clean white studio background")
+- When published copy is provided, the scene should visually support that message (tone, subject, metaphor) without rendering the text as typographic overlay
 - No text overlays unless explicitly requested
 - Optimize for 1:1 square format
 - Match brand colors and visual style when provided`
@@ -81,6 +82,9 @@ Objective: {{objetivo}}
 Brand colors: {{dna_cores}}
 Visual style: {{dna_estilo_imagem}}
 Mood: {{voz_tom}}
+
+Published copy to align the visual with (filled after text generation in "Texto e imagem"):
+{{copy_gerada}}
 
 Generate a square (1:1) marketing image prompt.`
 
@@ -105,8 +109,11 @@ export function buildTemplateVars(params: {
   tema: string
   persona: ICPArchetype | null
   brandParams: Partial<BrandParameters> | null
+  /** Conteúdo já gerado por /api/gerar no fluxo texto → imagem */
+  copyGerada?: string
 }): Record<string, string> {
-  const { canal, formato, estilo, objetivo, tema, persona, brandParams } = params
+  const { canal, formato, estilo, objetivo, tema, persona, brandParams, copyGerada } =
+    params
   return {
     canal,
     formato,
@@ -125,6 +132,7 @@ export function buildTemplateVars(params: {
     dna_cores: (brandParams?.color_palette ?? []).join(', '),
     dna_tipografia: brandParams?.typography ?? '',
     dna_estilo_imagem: brandParams?.image_style ?? '',
+    copy_gerada: copyGerada?.trim() ?? '',
   }
 }
 
@@ -278,8 +286,9 @@ export function buildImagePrompt(params: {
   objetivo: string
   persona: ICPArchetype | null
   brandParams: Partial<BrandParameters> | null
+  copyGerada?: string
 }): string {
-  const { canal, tema, objetivo, persona, brandParams } = params
+  const { canal, tema, objetivo, persona, brandParams, copyGerada } = params
   const parts = [
     `Professional marketing visual for ${canal}.`,
     tema ? `Theme: ${tema}.` : '',
@@ -288,6 +297,9 @@ export function buildImagePrompt(params: {
     brandParams?.image_style ? `Visual style: ${brandParams.image_style}.` : '',
     brandParams?.color_palette?.length
       ? `Brand colors: ${brandParams.color_palette.join(', ')}.`
+      : '',
+    copyGerada?.trim()
+      ? `Align the visual with this copy (mood and subject, no text in image): ${copyGerada.trim().slice(0, 2000)}`
       : '',
     'Clean, high quality, modern design. No text overlays.',
   ].filter(Boolean)

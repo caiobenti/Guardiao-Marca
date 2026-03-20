@@ -56,17 +56,6 @@ export function VozEscrita({ data, userCode, userId }: Props) {
   const isSaving = useRef(false);
   const isFirstRender = useRef(true);
 
-  function markDirty() {
-    if (isFirstRender.current) return;
-    setIsDirty(true);
-  }
-
-  // Flip isFirstRender after mount
-  if (isFirstRender.current) {
-    // Will be set to false after first interaction via useEffect pattern
-    // We use a workaround: flag flips after the first setter call
-  }
-
   function makeSetter<T>(setter: (v: T) => void) {
     return (v: T) => {
       if (isFirstRender.current) {

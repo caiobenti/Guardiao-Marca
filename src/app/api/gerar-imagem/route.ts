@@ -7,15 +7,17 @@ import { CURRENT_USER_CODE } from "@/lib/config";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { canal, tema, objetivo, persona, brandParams, formato, estilo } = body as {
-      canal: string;
-      tema: string;
-      objetivo: string;
-      persona: ICPArchetype | null;
-      brandParams: Partial<BrandParameters> | null;
-      formato?: string;
-      estilo?: string;
-    };
+    const { canal, tema, objetivo, persona, brandParams, formato, estilo, copyGerada } =
+      body as {
+        canal: string;
+        tema: string;
+        objetivo: string;
+        persona: ICPArchetype | null;
+        brandParams: Partial<BrandParameters> | null;
+        formato?: string;
+        estilo?: string;
+        copyGerada?: string;
+      };
 
     const hfToken = process.env.HF_TOKEN;
     if (!hfToken) {
@@ -28,6 +30,7 @@ export async function POST(req: NextRequest) {
       objetivo,
       persona,
       brandParams,
+      copyGerada,
     });
 
     const { data: iaConfig } = await supabase
@@ -44,6 +47,7 @@ export async function POST(req: NextRequest) {
       tema,
       persona,
       brandParams,
+      copyGerada,
     });
 
     const sysImg = (iaConfig?.system_prompt_img

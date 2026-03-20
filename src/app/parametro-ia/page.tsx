@@ -5,14 +5,14 @@ import ParametroIAClient from "@/components/parametro-ia/ParametroIAClient";
 export const dynamic = "force-dynamic";
 
 export default async function ParametroIAPage() {
-  // Get user from DB1
+  // Mesmo identificador gravado em DB2 / DB3
   const { data: user } = await supabase
     .from("DB1 - users")
-    .select("id")
+    .select("user_id")
     .eq("user_code", CURRENT_USER_CODE)
     .maybeSingle();
 
-  const userId = user?.id ?? "";
+  const userId = user?.user_id ?? "";
 
   // Get ia_config from DB4
   const { data: iaConfig } = await supabase
