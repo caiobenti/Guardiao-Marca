@@ -6,6 +6,7 @@ import {
   buildUserPrompt,
   buildPromptFromTemplate,
   buildTemplateVars,
+  parseCopyForImageGeneration,
   UserPromptParams,
 } from "@/lib/prompts";
 import { BrandParameters, ICPArchetype } from "@/lib/types";
@@ -66,6 +67,19 @@ export async function POST(req: NextRequest) {
       userPrompt   = buildUserPrompt({ ...body, persona });
     }
 
+    if (body.estilo === "Texto e imagem") {
+      userPrompt = `${userPrompt}
+
+---
+FORMATO DE SAIDA OBRIGATORIO:
+Retorne apenas JSON valido (sem markdown) com as chaves:
+{
+  "publico": "<conteudo final que o usuario vai ver>",
+  "promptImagem": "<descricao visual tecnica para IA de imagem; nao mostrar na interface>"
+}
+Nao inclua texto fora do JSON.`
+    }
+
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
@@ -108,10 +122,38 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await groqRes.json();
-    const content: string = data.choices?.[0]?.message?.content ?? "";
+    const rawContent: string = data.choices?.[0]?.message?.content ?? "";
+    const cleanedRaw = rawContent
+      .replace(/^```json\s*/i, "")
+      .replace(/^```\s*/i, "")
+      .replace(/\s*```$/, "")
+      .trim();
+
+    let content = rawContent;
+    let imageDirective = "";
+
+    if (body.estilo === "Texto e imagem") {
+      try {
+        const parsed = JSON.parse(cleanedRaw) as {
+          publico?: unknown;
+          promptImagem?: unknown;
+        };
+        if (typeof parsed.publico === "string") {
+          content = parsed.publico.trim();
+        }
+        if (typeof parsed.promptImagem === "string") {
+          imageDirective = parsed.promptImagem.trim();
+        }
+      } catch {
+        // fallback legada: tenta extrair de "Imagem:" visível
+        const parsedLegacy = parseCopyForImageGeneration(rawContent);
+        imageDirective = parsedLegacy.imagem;
+      }
+    }
 
     return NextResponse.json({
       content,
+      imageDirective,
       promptDebug: {
         system: systemPrompt,
         user: userPrompt,

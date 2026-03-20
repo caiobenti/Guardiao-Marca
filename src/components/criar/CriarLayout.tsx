@@ -82,13 +82,18 @@ export function CriarLayout({ icps, brandParams }: Props) {
             : ""
         );
         setOutputTexto(content);
+        const imageDirective = dataText.imageDirective ?? "";
 
         imagePhase = true;
         setLoadingImagem(true);
         const rImg = await fetch("/api/gerar-imagem", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...imageBodyBase, copyGerada: content }),
+          body: JSON.stringify({
+            ...imageBodyBase,
+            copyGerada: content,
+            imageDirective,
+          }),
         });
         const dataImg = await rImg.json();
         if (dataImg.error) setErroImagem(dataImg.error);

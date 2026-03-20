@@ -20,9 +20,10 @@ const MODELS = [
 const COPY_GERADA = "{{copy_gerada}}";
 const COPY_IMAGEM = "{{copy_imagem}}";
 const COPY_TEXTO = "{{copy_texto}}";
+const DIRETRIZ_IMAGEM = "{{diretriz_imagem}}";
 
 /** Variáveis só preenchidas no fluxo texto → imagem (não usar em template de texto). */
-const IMG_FLOW_VARS = [COPY_GERADA, COPY_IMAGEM, COPY_TEXTO];
+const IMG_FLOW_VARS = [COPY_GERADA, COPY_IMAGEM, COPY_TEXTO, DIRETRIZ_IMAGEM];
 
 const AVAILABLE_VARS = [
   "{{canal}}",
@@ -45,6 +46,7 @@ const AVAILABLE_VARS = [
   COPY_GERADA,
   COPY_IMAGEM,
   COPY_TEXTO,
+  DIRETRIZ_IMAGEM,
 ];
 
 const SYSTEM_VAR_PICK = [

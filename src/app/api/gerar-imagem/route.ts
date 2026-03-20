@@ -7,7 +7,17 @@ import { CURRENT_USER_CODE } from "@/lib/config";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { canal, tema, objetivo, persona, brandParams, formato, estilo, copyGerada } =
+    const {
+      canal,
+      tema,
+      objetivo,
+      persona,
+      brandParams,
+      formato,
+      estilo,
+      copyGerada,
+      imageDirective,
+    } =
       body as {
         canal: string;
         tema: string;
@@ -17,6 +27,7 @@ export async function POST(req: NextRequest) {
         formato?: string;
         estilo?: string;
         copyGerada?: string;
+        imageDirective?: string;
       };
 
     const hfToken = process.env.HF_TOKEN;
@@ -31,6 +42,7 @@ export async function POST(req: NextRequest) {
       persona,
       brandParams,
       copyGerada,
+      imageDirective,
     });
 
     const { data: iaConfig } = await supabase
@@ -48,6 +60,7 @@ export async function POST(req: NextRequest) {
       persona,
       brandParams,
       copyGerada,
+      imageDirective,
     });
 
     const sysImg = (iaConfig?.system_prompt_img
