@@ -60,7 +60,8 @@ O que mais valoriza: {{persona_valor}}
 ## Tema / Assunto
 {{tema}}
 
-Se o estilo de mídia for "Texto e imagem", em cada slide numerado inclua **Imagem:** (direção visual, cores) e **Texto:** (copy). O primeiro slide alimenta a geração de arte.
+Quantidade sugerida de slides quando houver carrossel: {{slide_count}}
+Estrutura esperada para geração visual: {{slides_json}}
 
 ---
 Crie o conteúdo agora. Entregue direto, sem preâmbulos.`
@@ -190,6 +191,8 @@ export function buildTemplateVars(params: {
   const { imagem, texto } = trimmed
     ? parseCopyForImageGeneration(trimmed)
     : { imagem: '', texto: '' }
+  const slideCount =
+    /carrossel|sequ[êe]ncia/i.test(formato) ? "5" : "1"
   return {
     canal,
     formato,
@@ -212,6 +215,9 @@ export function buildTemplateVars(params: {
     copy_imagem: imagem,
     copy_texto: texto,
     diretriz_imagem: imageDirective?.trim() ?? '',
+    slide_count: slideCount,
+    slides_json:
+      '[{"index":1,"promptImagem":"..."},{"index":2,"promptImagem":"..."}]',
   }
 }
 

@@ -16,6 +16,11 @@ interface GerarRequest extends UserPromptParams {
   icps?: ICPArchetype[];
 }
 
+interface SlidePromptItem {
+  index: number;
+  promptImagem: string;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body: GerarRequest = await req.json();
@@ -74,7 +79,12 @@ FORMATO DE SAIDA OBRIGATORIO:
 Retorne apenas JSON valido (sem markdown) com as chaves:
 {
   "publico": "<conteudo final que o usuario vai ver>",
-  "promptImagem": "<descricao visual tecnica para IA de imagem; nao mostrar na interface>"
+  "slides": [
+    {
+      "index": 1,
+      "promptImagem": "<descricao visual tecnica para IA de imagem, sem texto rasterizado>"
+    }
+  ]
 }
 Nao inclua texto fora do JSON.`
     }
@@ -129,13 +139,13 @@ Nao inclua texto fora do JSON.`
       .trim();
 
     let content = rawContent;
-    let imageDirective = "";
+    let slides: SlidePromptItem[] = [];
 
     if (body.estilo === "Texto e imagem") {
       try {
         const parsed = JSON.parse(cleanedRaw) as {
           publico?: unknown;
-          promptImagem?: unknown;
+          slides?: unknown;
         };
         if (typeof parsed.publico === "string" && parsed.publico.trim()) {
           content = parsed.publico.trim();
@@ -148,25 +158,50 @@ Nao inclua texto fora do JSON.`
             { status: 422 }
           );
         }
-        if (
-          typeof parsed.promptImagem === "string" &&
-          parsed.promptImagem.trim()
-        ) {
-          imageDirective = parsed.promptImagem.trim();
-        } else {
+        if (!Array.isArray(parsed.slides) || parsed.slides.length === 0) {
           return NextResponse.json(
             {
               error:
-                "Formato inválido da LLM de texto: campo 'promptImagem' ausente ou vazio no modo Texto e imagem.",
+                "Formato inválido da LLM de texto: campo 'slides' ausente ou vazio no modo Texto e imagem.",
             },
             { status: 422 }
           );
         }
+
+        const parsedSlides = parsed.slides
+          .map((item): SlidePromptItem | null => {
+            if (!item || typeof item !== "object") return null;
+            const idxRaw = (item as { index?: unknown }).index;
+            const promptRaw = (item as { promptImagem?: unknown }).promptImagem;
+            const index =
+              typeof idxRaw === "number"
+                ? idxRaw
+                : typeof idxRaw === "string"
+                  ? Number.parseInt(idxRaw, 10)
+                  : NaN;
+            const promptImagem =
+              typeof promptRaw === "string" ? promptRaw.trim() : "";
+            if (!Number.isFinite(index) || index < 1 || !promptImagem) return null;
+            return { index, promptImagem };
+          })
+          .filter((s): s is SlidePromptItem => Boolean(s))
+          .sort((a, b) => a.index - b.index);
+
+        if (parsedSlides.length === 0) {
+          return NextResponse.json(
+            {
+              error:
+                "Formato inválido da LLM de texto: nenhum slide válido com 'index' e 'promptImagem' foi retornado.",
+            },
+            { status: 422 }
+          );
+        }
+        slides = parsedSlides;
       } catch {
         return NextResponse.json(
           {
             error:
-              "Formato inválido da LLM de texto no modo Texto e imagem. Esperado JSON com 'publico' e 'promptImagem'.",
+              "Formato inválido da LLM de texto no modo Texto e imagem. Esperado JSON com 'publico' e 'slides'.",
           },
           { status: 422 }
         );
@@ -175,7 +210,7 @@ Nao inclua texto fora do JSON.`
 
     return NextResponse.json({
       content,
-      imageDirective,
+      slides,
       promptDebug: {
         system: systemPrompt,
         user: userPrompt,

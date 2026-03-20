@@ -1,10 +1,19 @@
 "use client";
 
+import { useState } from "react";
+import { SlideLayerEditor } from "@/components/editor/SlideLayerEditor";
+
+interface OutputSlide {
+  index: number;
+  imageUrl: string;
+}
+
 interface Props {
   objetivo: string;    setObjetivo: (v: string) => void;
   tema: string;        setTema: (v: string) => void;
   outputTexto: string;
   outputImagem: string;
+  outputSlides: OutputSlide[];
   loadingTexto: boolean;
   loadingImagem: boolean;
   erroTexto: string;
@@ -23,6 +32,7 @@ export function PainelOutput({
   setTema,
   outputTexto,
   outputImagem,
+  outputSlides,
   loadingTexto,
   loadingImagem,
   erroTexto,
@@ -33,6 +43,8 @@ export function PainelOutput({
   promptTextoDebug,
   promptImagemDebug,
 }: Props) {
+  const [editingSlide, setEditingSlide] = useState<OutputSlide | null>(null);
+
   return (
     <div className="flex-1 h-full flex flex-col overflow-hidden bg-[#f9f9f7]">
 
@@ -78,7 +90,7 @@ export function PainelOutput({
       {/* ── Área de output ────────────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
         {/* Empty state */}
-        {!loadingTexto && !loadingImagem && !outputTexto && !outputImagem && !erroTexto && !erroImagem && (
+        {!loadingTexto && !loadingImagem && !outputTexto && !outputImagem && outputSlides.length === 0 && !erroTexto && !erroImagem && (
           <div className="h-full flex items-center justify-center">
             <div className="text-center max-w-xs">
               <div className="text-3xl mb-3">✦</div>
@@ -91,7 +103,7 @@ export function PainelOutput({
         )}
 
         {/* Content area */}
-        {(loadingTexto || loadingImagem || outputTexto || outputImagem || erroTexto || erroImagem) && (
+        {(loadingTexto || loadingImagem || outputTexto || outputImagem || outputSlides.length > 0 || erroTexto || erroImagem) && (
           <div className="p-8 flex flex-col gap-6 max-w-[680px] mx-auto">
 
             {/* TEXT block */}
@@ -152,7 +164,30 @@ export function PainelOutput({
                 {!loadingImagem && erroImagem && (
                   <p className="text-sm text-red-500">{erroImagem}</p>
                 )}
-                {!loadingImagem && outputImagem && (
+                {!loadingImagem && outputSlides.length > 0 && (
+                  <div className="grid grid-cols-1 gap-4">
+                    {outputSlides.map((slide) => (
+                      <div key={slide.index} className="border border-stone-200 rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs text-stone-500 font-medium">Slide {slide.index}</span>
+                          <button
+                            type="button"
+                            onClick={() => setEditingSlide(slide)}
+                            className="text-xs text-[#1a6b5a] hover:underline"
+                          >
+                            Editar
+                          </button>
+                        </div>
+                        <img
+                          src={slide.imageUrl}
+                          alt={`Imagem gerada slide ${slide.index}`}
+                          className="w-full rounded-lg"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {!loadingImagem && outputSlides.length === 0 && outputImagem && (
                   <img
                     src={outputImagem}
                     alt="Imagem gerada"
@@ -173,6 +208,13 @@ export function PainelOutput({
           </div>
         )}
       </div>
+      {editingSlide && (
+        <SlideLayerEditor
+          imageUrl={editingSlide.imageUrl}
+          slideIndex={editingSlide.index}
+          onClose={() => setEditingSlide(null)}
+        />
+      )}
     </div>
   );
 }

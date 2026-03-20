@@ -21,6 +21,8 @@ const COPY_GERADA = "{{copy_gerada}}";
 const COPY_IMAGEM = "{{copy_imagem}}";
 const COPY_TEXTO = "{{copy_texto}}";
 const DIRETRIZ_IMAGEM = "{{diretriz_imagem}}";
+const SLIDE_COUNT = "{{slide_count}}";
+const SLIDES_JSON = "{{slides_json}}";
 
 /** Variáveis só preenchidas no fluxo texto → imagem (não usar em template de texto). */
 const IMG_FLOW_VARS = [COPY_GERADA, COPY_IMAGEM, COPY_TEXTO, DIRETRIZ_IMAGEM];
@@ -43,6 +45,8 @@ const AVAILABLE_VARS = [
   "{{dna_cores}}",
   "{{dna_tipografia}}",
   "{{dna_estilo_imagem}}",
+  SLIDE_COUNT,
+  SLIDES_JSON,
   COPY_GERADA,
   COPY_IMAGEM,
   COPY_TEXTO,

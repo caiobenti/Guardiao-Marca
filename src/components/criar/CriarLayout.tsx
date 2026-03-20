@@ -4,6 +4,11 @@ import { PainelInputs } from "./PainelInputs";
 import { PainelOutput } from "./PainelOutput";
 import { ICPArchetype, BrandParameters } from "@/lib/types";
 
+interface OutputSlide {
+  index: number;
+  imageUrl: string;
+}
+
 interface Props {
   icps: ICPArchetype[];
   brandParams?: Partial<BrandParameters>;
@@ -22,7 +27,8 @@ export function CriarLayout({ icps, brandParams }: Props) {
 
   // ── Output ──────────────────────────────────────────────────────────────
   const [outputTexto, setOutputTexto]     = useState("");
-  const [outputImagem, setOutputImagem]   = useState(""); // base64 data URL
+  const [outputImagem, setOutputImagem]   = useState(""); // legado (só imagem)
+  const [outputSlides, setOutputSlides]   = useState<OutputSlide[]>([]);
   const [loadingTexto, setLoadingTexto]   = useState(false);
   const [loadingImagem, setLoadingImagem] = useState(false);
   const [erroTexto, setErroTexto]         = useState("");
@@ -37,6 +43,7 @@ export function CriarLayout({ icps, brandParams }: Props) {
   async function handleGerar() {
     if (!canGenerate || isGenerating) return;
     setOutputTexto(""); setOutputImagem(""); setErroTexto(""); setErroImagem("");
+    setOutputSlides([]);
     setPromptTextoDebug(""); setPromptImagemDebug("");
 
     const persona = icps.find(i => i.id === personaId) ?? null;
@@ -82,7 +89,11 @@ export function CriarLayout({ icps, brandParams }: Props) {
             : ""
         );
         setOutputTexto(content);
-        const imageDirective = dataText.imageDirective ?? "";
+        const slides = Array.isArray(dataText.slides) ? dataText.slides : [];
+        if (slides.length === 0) {
+          setErroTexto("A IA não retornou slides para geração de imagem.");
+          return;
+        }
 
         imagePhase = true;
         setLoadingImagem(true);
@@ -92,14 +103,36 @@ export function CriarLayout({ icps, brandParams }: Props) {
           body: JSON.stringify({
             ...imageBodyBase,
             copyGerada: content,
-            imageDirective,
+            slides,
           }),
         });
         const dataImg = await rImg.json();
         if (dataImg.error) setErroImagem(dataImg.error);
         else {
-          setOutputImagem(dataImg.imageUrl ?? "");
-          setPromptImagemDebug(dataImg.promptDebug?.final ?? "");
+          if (Array.isArray(dataImg.images)) {
+            setOutputSlides(
+              dataImg.images
+                .filter((img: { index?: number; imageUrl?: string }) =>
+                  Number.isFinite(img?.index) && Boolean(img?.imageUrl)
+                )
+                .map((img: { index: number; imageUrl: string }) => ({
+                  index: img.index,
+                  imageUrl: img.imageUrl,
+                }))
+            );
+          } else {
+            setOutputImagem(dataImg.imageUrl ?? "");
+          }
+          setPromptImagemDebug(
+            Array.isArray(dataImg.images)
+              ? dataImg.images
+                  .map(
+                    (img: { index: number; promptDebug?: { final?: string } }) =>
+                      `--- Slide ${img.index} ---\n${img.promptDebug?.final ?? ""}`
+                  )
+                  .join("\n\n")
+              : (dataImg.promptDebug?.final ?? "")
+          );
         }
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
@@ -185,6 +218,7 @@ export function CriarLayout({ icps, brandParams }: Props) {
         tema={tema}             setTema={setTema}
         outputTexto={outputTexto}
         outputImagem={outputImagem}
+        outputSlides={outputSlides}
         loadingTexto={loadingTexto}
         loadingImagem={loadingImagem}
         erroTexto={erroTexto}
