@@ -41,6 +41,7 @@ interface Props {
   setShowPromptDebug: (v: boolean) => void;
   promptTextoDebug: string;
   promptImagemDebug: string;
+  promptImagemDebugBySlide: Record<number, string>;
   brandColorShortcuts: string[];
 }
 
@@ -95,6 +96,7 @@ export function PainelOutput({
   setShowPromptDebug,
   promptTextoDebug,
   promptImagemDebug,
+  promptImagemDebugBySlide,
   brandColorShortcuts,
 }: Props) {
   const [editingSlideIndex, setEditingSlideIndex] = useState(1);
@@ -123,6 +125,10 @@ export function PainelOutput({
   const stageBoxHeight = Math.round(baseHeight * fitScale);
   const currentLayers = savedLayersBySlide[currentSlide?.index ?? 1] ?? [];
   const activeSavedLayers = currentLayers;
+  const activeImagePromptDebug =
+    currentSlide && promptImagemDebugBySlide[currentSlide.index]
+      ? promptImagemDebugBySlide[currentSlide.index]
+      : promptImagemDebug;
 
   // Seleciona o primeiro slide assim que as imagens chegarem.
   useEffect(() => {
@@ -502,11 +508,15 @@ export function PainelOutput({
                     </div>
                   </div>
                 )}
-                {showPromptDebug && promptImagemDebug && (
+                {showPromptDebug && activeImagePromptDebug && (
                   <details className="mt-6">
-                    <summary className="text-xs text-gray-500 cursor-pointer">Prompt enviado para imagem</summary>
+                    <summary className="text-xs text-gray-500 cursor-pointer">
+                      {currentSlide
+                        ? `Prompt enviado para imagem - Slide ${currentSlide.index}`
+                        : "Prompt enviado para imagem"}
+                    </summary>
                     <pre className="mt-3 text-xs text-gray-600 whitespace-pre-wrap font-mono bg-stone-50 border border-stone-200 rounded-lg p-3">
-                      {promptImagemDebug}
+                      {activeImagePromptDebug}
                     </pre>
                   </details>
                 )}

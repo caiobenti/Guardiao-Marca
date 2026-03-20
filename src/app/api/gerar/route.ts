@@ -21,6 +21,25 @@ interface SlidePromptItem {
   promptImagem: string;
 }
 
+function validatePublicContentQuality(params: {
+  content: string;
+  formato?: string;
+  slidesCount: number;
+}): string | null {
+  const text = params.content.trim();
+  const words = text.split(/\s+/).filter(Boolean).length;
+  const isCarousel = /carrossel|sequ[êe]ncia/i.test(params.formato ?? "") || params.slidesCount > 1;
+  const minChars = isCarousel ? 180 : 80;
+  const minWords = isCarousel ? 28 : 12;
+
+  if (text.length < minChars || words < minWords) {
+    return isCarousel
+      ? "Formato inválido da LLM de texto: campo 'publico' veio curto para conteúdo em múltiplos slides. Gere um texto mais completo."
+      : "Formato inválido da LLM de texto: campo 'publico' veio curto. Gere um texto mais completo.";
+  }
+  return null;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body: GerarRequest = await req.json();
@@ -131,6 +150,7 @@ Nao inclua texto fora do JSON.`
     }
 
     const data = await groqRes.json();
+    const finishReason: string | undefined = data.choices?.[0]?.finish_reason;
     const rawContent: string = data.choices?.[0]?.message?.content ?? "";
     const cleanedRaw = rawContent
       .replace(/^```json\s*/i, "")
@@ -197,6 +217,14 @@ Nao inclua texto fora do JSON.`
           );
         }
         slides = parsedSlides;
+        const qualityError = validatePublicContentQuality({
+          content,
+          formato: body.formato,
+          slidesCount: slides.length,
+        });
+        if (qualityError) {
+          return NextResponse.json({ error: qualityError }, { status: 422 });
+        }
       } catch {
         return NextResponse.json(
           {
@@ -217,6 +245,7 @@ Nao inclua texto fora do JSON.`
         model,
         temperature,
         maxTokens,
+        finishReason: finishReason ?? "unknown",
       },
     });
   } catch (err: unknown) {

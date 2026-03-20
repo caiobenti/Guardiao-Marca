@@ -9,6 +9,14 @@ interface SlidePromptItem {
   promptImagem: string;
 }
 
+function compactTemplatePrompt(templatePrompt: string): string {
+  return templatePrompt
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join("\n");
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -52,6 +60,7 @@ export async function POST(req: NextRequest) {
       slidePrompt?: string;
       slideIndex?: number;
     }) => {
+      const primaryDirection = (params.slidePrompt || imageDirective || "").trim();
       const fallbackPrompt = buildImagePrompt({
         canal,
         tema,
@@ -59,7 +68,7 @@ export async function POST(req: NextRequest) {
         persona,
         brandParams,
         copyGerada,
-        imageDirective: params.slidePrompt || imageDirective,
+        imageDirective: primaryDirection,
       });
 
       const vars = buildTemplateVars({
@@ -71,7 +80,7 @@ export async function POST(req: NextRequest) {
         persona,
         brandParams,
         copyGerada,
-        imageDirective: params.slidePrompt || imageDirective,
+        imageDirective: primaryDirection,
       });
 
       const sysImg = (iaConfig?.system_prompt_img
@@ -82,15 +91,17 @@ export async function POST(req: NextRequest) {
         ? buildPromptFromTemplate(iaConfig.user_template_img, vars)
         : ""
       ).trim();
-      const templatePrompt = [sysImg, usrImg].filter(Boolean).join("\n\n");
-      const directive = (params.slidePrompt || imageDirective || "").trim();
-      const directiveBlock = directive
-        ? `Hidden image direction from text LLM (must guide the scene)${
+      const templatePrompt = compactTemplatePrompt([sysImg, usrImg].filter(Boolean).join("\n\n"));
+      const directiveBlock = primaryDirection
+        ? `Primary visual direction (highest priority)${
             params.slideIndex ? ` - Slide ${params.slideIndex}` : ""
-          }:\n${directive}`
+          }:\n${primaryDirection}`
         : "";
-      const finalPrompt = templatePrompt
-        ? [directiveBlock, templatePrompt].filter(Boolean).join("\n\n")
+      const alignmentBlock = templatePrompt
+        ? "Use template constraints (style/colors/composition) only when they do not conflict with Primary visual direction."
+        : "";
+      const finalPrompt = templatePrompt || directiveBlock
+        ? [directiveBlock, alignmentBlock, templatePrompt].filter(Boolean).join("\n\n")
         : fallbackPrompt;
 
       const res = await fetch(
@@ -119,6 +130,8 @@ export async function POST(req: NextRequest) {
       return {
         imageUrl: `data:${contentType};base64,${base64}`,
         promptDebug: {
+          slideIndex: params.slideIndex ?? null,
+          primaryDirection,
           final: finalPrompt,
           system: sysImg,
           user: usrImg,
@@ -147,6 +160,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         images: generated,
         imageUrls: generated.map((g) => g.imageUrl),
+        promptDebugBySlide: generated.map((g) => ({
+          index: g.index,
+          final: g.promptDebug.final,
+          primaryDirection: g.promptDebug.primaryDirection,
+        })),
         promptDebug: { final: generated.map((g) => g.promptDebug.final).join("\n\n---\n\n") },
       });
     }

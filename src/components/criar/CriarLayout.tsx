@@ -35,6 +35,7 @@ export function CriarLayout({ icps, brandParams }: Props) {
   const [erroImagem, setErroImagem]       = useState("");
   const [promptTextoDebug, setPromptTextoDebug] = useState("");
   const [promptImagemDebug, setPromptImagemDebug] = useState("");
+  const [promptImagemDebugBySlide, setPromptImagemDebugBySlide] = useState<Record<number, string>>({});
   const [showPromptDebug, setShowPromptDebug] = useState(false);
   const brandColorShortcuts = (brandParams?.color_palette ?? []).filter(Boolean);
 
@@ -46,6 +47,7 @@ export function CriarLayout({ icps, brandParams }: Props) {
     setOutputTexto(""); setOutputImagem(""); setErroTexto(""); setErroImagem("");
     setOutputSlides([]);
     setPromptTextoDebug(""); setPromptImagemDebug("");
+    setPromptImagemDebugBySlide({});
 
     const persona = icps.find(i => i.id === personaId) ?? null;
     const gerarTexto = estilo !== "Só imagem";
@@ -86,7 +88,7 @@ export function CriarLayout({ icps, brandParams }: Props) {
         const content = dataText.content ?? "";
         setPromptTextoDebug(
           dataText.promptDebug
-            ? `MODEL: ${dataText.promptDebug.model}\nTEMPERATURE: ${dataText.promptDebug.temperature}\nMAX_TOKENS: ${dataText.promptDebug.maxTokens}\n\n=== SYSTEM ===\n${dataText.promptDebug.system ?? ""}\n\n=== USER ===\n${dataText.promptDebug.user ?? ""}`
+            ? `MODEL: ${dataText.promptDebug.model}\nTEMPERATURE: ${dataText.promptDebug.temperature}\nMAX_TOKENS: ${dataText.promptDebug.maxTokens}\nFINISH_REASON: ${dataText.promptDebug.finishReason ?? "unknown"}\n\n=== SYSTEM ===\n${dataText.promptDebug.system ?? ""}\n\n=== USER ===\n${dataText.promptDebug.user ?? ""}`
             : ""
         );
         setOutputTexto(content);
@@ -134,6 +136,23 @@ export function CriarLayout({ icps, brandParams }: Props) {
                   .join("\n\n")
               : (dataImg.promptDebug?.final ?? "")
           );
+          if (Array.isArray(dataImg.promptDebugBySlide)) {
+            const mapped: Record<number, string> = {};
+            for (const item of dataImg.promptDebugBySlide as Array<{ index?: number; final?: string }>) {
+              if (Number.isFinite(item?.index) && typeof item?.final === "string") {
+                mapped[item.index as number] = item.final;
+              }
+            }
+            setPromptImagemDebugBySlide(mapped);
+          } else if (Array.isArray(dataImg.images)) {
+            const mapped: Record<number, string> = {};
+            for (const img of dataImg.images as Array<{ index?: number; promptDebug?: { final?: string } }>) {
+              if (Number.isFinite(img?.index) && typeof img?.promptDebug?.final === "string") {
+                mapped[img.index as number] = img.promptDebug.final;
+              }
+            }
+            setPromptImagemDebugBySlide(mapped);
+          }
         }
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
@@ -168,7 +187,7 @@ export function CriarLayout({ icps, brandParams }: Props) {
           setOutputTexto(data.content ?? "");
           setPromptTextoDebug(
             data.promptDebug
-              ? `MODEL: ${data.promptDebug.model}\nTEMPERATURE: ${data.promptDebug.temperature}\nMAX_TOKENS: ${data.promptDebug.maxTokens}\n\n=== SYSTEM ===\n${data.promptDebug.system ?? ""}\n\n=== USER ===\n${data.promptDebug.user ?? ""}`
+              ? `MODEL: ${data.promptDebug.model}\nTEMPERATURE: ${data.promptDebug.temperature}\nMAX_TOKENS: ${data.promptDebug.maxTokens}\nFINISH_REASON: ${data.promptDebug.finishReason ?? "unknown"}\n\n=== SYSTEM ===\n${data.promptDebug.system ?? ""}\n\n=== USER ===\n${data.promptDebug.user ?? ""}`
               : ""
           );
         }
@@ -193,6 +212,9 @@ export function CriarLayout({ icps, brandParams }: Props) {
         else {
           setOutputImagem(data.imageUrl ?? "");
           setPromptImagemDebug(data.promptDebug?.final ?? "");
+          setPromptImagemDebugBySlide(
+            data.promptDebug?.final ? { 1: data.promptDebug.final } : {}
+          );
         }
       } catch (e) {
         setErroImagem(e instanceof Error ? e.message : String(e));
@@ -229,6 +251,7 @@ export function CriarLayout({ icps, brandParams }: Props) {
         setShowPromptDebug={setShowPromptDebug}
         promptTextoDebug={promptTextoDebug}
         promptImagemDebug={promptImagemDebug}
+        promptImagemDebugBySlide={promptImagemDebugBySlide}
         brandColorShortcuts={brandColorShortcuts}
       />
     </div>
