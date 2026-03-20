@@ -20,22 +20,22 @@ export async function POST(req: NextRequest) {
 
     const prompt = buildImagePrompt({ canal, tema, objetivo, persona, brandParams });
 
-    // Gemini 2.0 Flash Exp — geração nativa de imagem
+    // Imagen 4 Fast — geração de imagem via Google AI Studio
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { responseModalities: ["IMAGE", "TEXT"] },
+          instances: [{ prompt }],
+          parameters: { sampleCount: 1, aspectRatio: "1:1" },
         }),
       }
     );
 
     if (!geminiRes.ok) {
       const errText = await geminiRes.text();
-      console.error("[api/gerar-imagem] Gemini error:", geminiRes.status, errText);
+      console.error("[api/gerar-imagem] Imagen error:", geminiRes.status, errText);
       let msg = `Status ${geminiRes.status}`;
       try {
         const errJson = JSON.parse(errText);
@@ -45,16 +45,15 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await geminiRes.json();
-    const parts = data?.candidates?.[0]?.content?.parts ?? [];
-    const imagePart = parts.find((p: { inlineData?: { mimeType: string; data: string } }) => p.inlineData);
+    const prediction = data?.predictions?.[0];
 
-    if (!imagePart?.inlineData) {
+    if (!prediction?.bytesBase64Encoded) {
       console.error("[api/gerar-imagem] Unexpected response:", JSON.stringify(data));
       return NextResponse.json({ error: "Nenhuma imagem retornada." }, { status: 500 });
     }
 
-    const { mimeType, data: base64 } = imagePart.inlineData;
-    const imageUrl = `data:${mimeType};base64,${base64}`;
+    const mimeType = prediction.mimeType ?? "image/png";
+    const imageUrl = `data:${mimeType};base64,${prediction.bytesBase64Encoded}`;
 
     return NextResponse.json({ imageUrl });
   } catch (err: unknown) {
