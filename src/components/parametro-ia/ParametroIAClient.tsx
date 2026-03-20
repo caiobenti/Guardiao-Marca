@@ -10,7 +10,7 @@ import {
   PromptBlocksConfig,
 } from "@/lib/prompts";
 import { IAConfig } from "@/lib/types";
-import { getAllVehicleRules } from "@/lib/vehicle-rules";
+import { CHANNEL_FORMATS, CHANNEL_OPTIONS, getAllVehicleRules } from "@/lib/vehicle-rules";
 
 const MODELS = [
   "llama-3.3-70b-versatile",
@@ -74,14 +74,6 @@ interface Props {
   userCode: string;
   initialConfig: Partial<IAConfig> | null;
 }
-
-const CHANNELS = ["Instagram", "LinkedIn", "Email", "WhatsApp"] as const;
-const FORMATOS: Record<string, string[]> = {
-  Instagram: ["Post", "Carrossel", "Reels", "Story"],
-  LinkedIn: ["Post", "Carrossel", "Artigo"],
-  Email: ["E-mail único", "Sequência"],
-  WhatsApp: ["Mensagem única", "Sequência"],
-};
 
 function buildDefaultPromptBlocksConfig(): PromptBlocksConfig {
   const vehicleRules: NonNullable<PromptBlocksConfig["vehicleRules"]> = {};
@@ -469,12 +461,12 @@ export default function ParametroIAClient({
                   onChange={(e) => {
                     const ch = e.target.value;
                     setSelectedChannel(ch);
-                    const firstFormat = FORMATOS[ch]?.[0] ?? "";
+                    const firstFormat = CHANNEL_FORMATS[ch]?.[0] ?? "";
                     setSelectedFormat(firstFormat);
                   }}
                   className="mt-1 w-full text-sm border border-stone-300 rounded-lg px-2 py-1.5"
                 >
-                  {CHANNELS.map((ch) => (
+                  {CHANNEL_OPTIONS.map((ch) => (
                     <option key={ch} value={ch}>{ch}</option>
                   ))}
                 </select>
@@ -486,7 +478,7 @@ export default function ParametroIAClient({
                   onChange={(e) => setSelectedFormat(e.target.value)}
                   className="mt-1 w-full text-sm border border-stone-300 rounded-lg px-2 py-1.5"
                 >
-                  {(FORMATOS[selectedChannel] ?? []).map((f) => (
+                  {(CHANNEL_FORMATS[selectedChannel] ?? []).map((f) => (
                     <option key={f} value={f}>{f}</option>
                   ))}
                 </select>

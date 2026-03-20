@@ -8,6 +8,15 @@ export interface VehicleRule {
   promptGuide: string;
 }
 
+export const CHANNEL_OPTIONS = ["Instagram", "LinkedIn", "Email", "WhatsApp"] as const;
+
+export const CHANNEL_FORMATS: Record<string, string[]> = {
+  Instagram: ["Post", "Carrossel", "Texto para reels", "Stories"],
+  LinkedIn: ["Post", "Carrossel", "Artigo longo"],
+  Email: ["Prospecção", "Nutrição", "Conversão"],
+  WhatsApp: ["Abordagem 1:1", "Follow-up"],
+};
+
 export const VEHICLE_RULES: VehicleRule[] = [
   {
     channel: "Instagram",
@@ -31,7 +40,7 @@ export const VEHICLE_RULES: VehicleRule[] = [
   },
   {
     channel: "Instagram",
-    format: "Reels",
+    format: "Texto para reels",
     outputSchema: "Roteiro por blocos [0-3s], [4-30s], [final]",
     copyLimit: "Fala estimada em 60-90 segundos",
     criticalPreview: "Primeiros 3 segundos",
@@ -41,7 +50,7 @@ export const VEHICLE_RULES: VehicleRule[] = [
   },
   {
     channel: "Instagram",
-    format: "Story",
+    format: "Stories",
     outputSchema: "Sequência de 3-5 telas",
     copyLimit: "1-2 frases por tela",
     criticalPreview: "Primeira tela",
@@ -71,7 +80,7 @@ export const VEHICLE_RULES: VehicleRule[] = [
   },
   {
     channel: "LinkedIn",
-    format: "Artigo",
+    format: "Artigo longo",
     outputSchema: "Título + subtítulo + corpo em seções + CTA final",
     copyLimit: "Meta entre 1000-2000 palavras",
     criticalPreview: "Título + primeira frase",
@@ -81,27 +90,37 @@ export const VEHICLE_RULES: VehicleRule[] = [
   },
   {
     channel: "Email",
-    format: "E-mail único",
-    outputSchema: "Subject + preheader + corpo + CTA",
-    copyLimit: "150-300 palavras conforme objetivo",
-    criticalPreview: "Subject + preheader",
-    hookIntent: "Relevância imediata para dor específica",
+    format: "Prospecção",
+    outputSchema: "Subject + preheader + corpo curto + CTA de baixo compromisso",
+    copyLimit: "100-150 words no corpo",
+    criticalPreview: "Subject (41 chars) + preheader (85 chars)",
+    hookIntent: "Relevância imediata para a dor sem contexto assumido",
     promptGuide:
-      "Escrever como pessoa para pessoa, sem formalismo excessivo, com CTA único de baixo atrito.",
+      "Entregue Subject (max 41), Preheader (max 85), corpo até 150 words e CTA de baixo compromisso.",
   },
   {
     channel: "Email",
-    format: "Sequência",
-    outputSchema: "Série numerada de e-mails com objetivo por etapa",
-    copyLimit: "Cada e-mail 150-300 palavras",
-    criticalPreview: "Subject e início de cada e-mail",
-    hookIntent: "Evoluir relação e mover para próxima ação",
+    format: "Nutrição",
+    outputSchema: "Subject + preheader + corpo com conteúdo de valor + CTA educacional",
+    copyLimit: "200-300 words",
+    criticalPreview: "Subject + preheader",
+    hookIntent: "Promessa de aprendizado ou insight útil",
     promptGuide:
-      "Cada e-mail deve ser independente, com proposta de valor clara e CTA específico por etapa.",
+      "Entregue Subject, Preheader, corpo com gancho->valor->transição e CTA educacional.",
+  },
+  {
+    channel: "Email",
+    format: "Conversão",
+    outputSchema: "Subject + preheader + corpo focado em 1 objeção + CTA direto e único",
+    copyLimit: "150-200 words",
+    criticalPreview: "Subject + preheader",
+    hookIntent: "Referência ao contexto anterior ou urgência",
+    promptGuide:
+      "Entregue Subject, Preheader, corpo focado em 1 objeção e CTA único sem alternativas.",
   },
   {
     channel: "WhatsApp",
-    format: "Mensagem única",
+    format: "Abordagem 1:1",
     outputSchema: "Mensagem curta em até 3 parágrafos",
     copyLimit: "Texto curto, direto e humano",
     criticalPreview: "Primeiras palavras da notificação",
@@ -111,24 +130,44 @@ export const VEHICLE_RULES: VehicleRule[] = [
   },
   {
     channel: "WhatsApp",
-    format: "Sequência",
-    outputSchema: "Mensagens numeradas com progressão",
-    copyLimit: "Até 2-3 parágrafos por mensagem",
-    criticalPreview: "Abertura de cada mensagem",
-    hookIntent: "Retomar contexto sem soar insistente",
+    format: "Follow-up",
+    outputSchema: "Referência ao contato anterior + nova proposta de valor + CTA direto",
+    copyLimit: "Máximo 2 parágrafos",
+    criticalPreview: "Primeiras palavras da notificação push",
+    hookIntent: "Retomada natural sem ser invasivo",
     promptGuide:
-      "Cada mensagem deve ter ângulo novo, CTA direto e tom leve de conversa.",
+      "Retome contexto sem cobrar, traga novo ângulo e CTA direto em tom leve.",
   },
 ];
 
+function normalizeText(value: string): string {
+  return (value || "")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .trim()
+    .toLowerCase();
+}
+
+function normalizeFormat(channel: string, format: string): string {
+  const ch = normalizeText(channel);
+  const fm = normalizeText(format);
+  if (ch === "instagram" && (fm === "reels" || fm === "texto para reels")) return "texto para reels";
+  if (ch === "instagram" && (fm === "story" || fm === "stories")) return "stories";
+  if (ch === "linkedin" && (fm === "artigo" || fm === "artigo longo")) return "artigo longo";
+  if (ch === "email" && (fm === "e-mail unico" || fm === "email unico")) return "prospeccao";
+  if (ch === "email" && fm === "sequencia") return "nutricao";
+  if (ch === "whatsapp" && fm === "mensagem unica") return "abordagem 1:1";
+  return fm;
+}
+
 export function getVehicleRule(canal: string, formato: string): VehicleRule | null {
-  const normalizedChannel = (canal || "").trim().toLowerCase();
-  const normalizedFormat = (formato || "").trim().toLowerCase();
+  const normalizedChannel = normalizeText(canal);
+  const normalizedFormat = normalizeFormat(canal, formato);
   return (
     VEHICLE_RULES.find(
       (rule) =>
-        rule.channel.toLowerCase() === normalizedChannel &&
-        rule.format.toLowerCase() === normalizedFormat
+        normalizeText(rule.channel) === normalizedChannel &&
+        normalizeText(rule.format) === normalizedFormat
     ) ?? null
   );
 }

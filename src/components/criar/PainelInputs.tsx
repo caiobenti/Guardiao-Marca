@@ -1,13 +1,7 @@
 "use client";
 import { ICPArchetype } from "@/lib/types";
+import { CHANNEL_FORMATS, CHANNEL_OPTIONS } from "@/lib/vehicle-rules";
 
-const CANAL_OPTIONS = ["Instagram", "LinkedIn", "Email", "WhatsApp"];
-const FORMATOS: Record<string, string[]> = {
-  Instagram: ["Post", "Carrossel", "Story", "Reels"],
-  LinkedIn:  ["Post", "Artigo", "Carrossel"],
-  Email:     ["E-mail único", "Sequência"],
-  WhatsApp:  ["Mensagem única", "Sequência"],
-};
 const ESTILO_OPTIONS = ["Só texto", "Só imagem", "Texto e imagem"];
 
 interface Props {
@@ -80,7 +74,7 @@ export function PainelInputs({
         <div className="flex flex-col gap-2">
           <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Bloco B - Veículo (canal)</label>
           <div className="flex flex-wrap gap-1.5">
-            {CANAL_OPTIONS.map(opt =>
+            {CHANNEL_OPTIONS.map(opt =>
               pill(opt, canal === opt, () => setCanal(canal === opt ? "" : opt))
             )}
           </div>
@@ -93,7 +87,7 @@ export function PainelInputs({
             <div className="flex flex-col gap-2">
               <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Bloco B - Formato</label>
               <div className="flex flex-wrap gap-1.5">
-                {(FORMATOS[canal] ?? []).map(opt =>
+                {(CHANNEL_FORMATS[canal] ?? []).map(opt =>
                   pill(opt, formato === opt, () => setFormato(formato === opt ? "" : opt))
                 )}
               </div>
