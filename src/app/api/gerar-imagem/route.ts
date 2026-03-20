@@ -13,45 +13,41 @@ export async function POST(req: NextRequest) {
       brandParams: Partial<BrandParameters> | null;
     };
 
-    const apiKey = process.env.GOOGLE_AI_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ error: "GOOGLE_AI_KEY não configurada" }, { status: 500 });
+    const hfToken = process.env.HF_TOKEN;
+    if (!hfToken) {
+      return NextResponse.json({ error: "HF_TOKEN não configurado" }, { status: 500 });
     }
 
     const prompt = buildImagePrompt({ canal, tema, objetivo, persona, brandParams });
 
-    // Imagen 4 Fast — 25 req/dia no free tier
+    // FLUX.1-schnell via Hugging Face — gratuito
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict?key=${apiKey}`,
+      "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          instances: [{ prompt }],
-          parameters: { sampleCount: 1, aspectRatio: "1:1" },
-        }),
+        headers: {
+          Authorization: `Bearer ${hfToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ inputs: prompt }),
       }
     );
 
     if (!res.ok) {
       const errText = await res.text();
-      console.error("[api/gerar-imagem] error:", res.status, errText);
+      console.error("[api/gerar-imagem] HF error:", res.status, errText);
       let msg = `Status ${res.status}`;
-      try { msg = JSON.parse(errText)?.error?.message ?? msg; } catch { /* ok */ }
+      try { msg = JSON.parse(errText)?.error ?? msg; } catch { /* ok */ }
       return NextResponse.json({ error: msg }, { status: 500 });
     }
 
-    const data = await res.json();
-    const prediction = data?.predictions?.[0];
+    // HF retorna a imagem como binary blob
+    const buffer = await res.arrayBuffer();
+    const base64 = Buffer.from(buffer).toString("base64");
+    const contentType = res.headers.get("content-type") ?? "image/jpeg";
 
-    if (!prediction?.bytesBase64Encoded) {
-      console.error("[api/gerar-imagem] no image in response:", JSON.stringify(data));
-      return NextResponse.json({ error: "Nenhuma imagem retornada." }, { status: 500 });
-    }
-
-    const mimeType = prediction.mimeType ?? "image/png";
     return NextResponse.json({
-      imageUrl: `data:${mimeType};base64,${prediction.bytesBase64Encoded}`,
+      imageUrl: `data:${contentType};base64,${base64}`,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
