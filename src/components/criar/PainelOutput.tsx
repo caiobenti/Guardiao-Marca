@@ -307,15 +307,26 @@ export function PainelOutput({
               <div className="bg-white rounded-[10px] border border-[#e8e8e4] p-8" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
                 <div className="flex items-center justify-between mb-6">
                   <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Imagem</span>
-                  {outputImagem && (
-                    <a
-                      href={outputImagem}
-                      download="imagem-gerada.png"
-                      className="text-xs text-[#1a6b5a] hover:underline"
-                    >
-                      Baixar
-                    </a>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {currentSlide && (
+                      <a
+                        href={currentSlide.imageUrl}
+                        download={`slide-${currentSlide.index}-bruta.png`}
+                        className="text-xs text-[#1a6b5a] hover:underline"
+                      >
+                        Baixar imagem bruta
+                      </a>
+                    )}
+                    {displaySlides.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={exportPng}
+                        className="text-xs text-[#1a6b5a] hover:underline"
+                      >
+                        Baixar imagem com edição
+                      </button>
+                    )}
+                  </div>
                 </div>
                 {loadingImagem && (
                   <div className="flex items-center gap-2 text-gray-400">
@@ -657,13 +668,6 @@ export function PainelOutput({
                         className="px-3 py-2 rounded-lg text-xs font-medium border border-[#1a6b5a] text-[#1a6b5a]"
                       >
                         Salvar edição
-                      </button>
-                      <button
-                        type="button"
-                        onClick={exportPng}
-                        className="px-3 py-2 rounded-lg text-xs font-medium bg-[#1a6b5a] text-white"
-                      >
-                        Exportar PNG
                       </button>
                     </div>
                     {saveMsg && <p className="text-xs text-[#1a6b5a] font-medium">{saveMsg}</p>}
