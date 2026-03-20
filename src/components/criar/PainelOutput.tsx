@@ -29,7 +29,6 @@ interface EditableTextLayer {
 interface Props {
   objetivo: string;    setObjetivo: (v: string) => void;
   tema: string;        setTema: (v: string) => void;
-  briefingLivre: string; setBriefingLivre: (v: string) => void;
   outputTexto: string;
   outputImagem: string;
   outputSlides: OutputSlide[];
@@ -85,8 +84,6 @@ export function PainelOutput({
   setObjetivo,
   tema,
   setTema,
-  briefingLivre,
-  setBriefingLivre,
   outputTexto,
   outputImagem,
   outputSlides,
@@ -253,7 +250,7 @@ export function PainelOutput({
   return (
     <div className="flex-1 h-full flex flex-col overflow-hidden bg-[#f9f9f7]">
 
-      {/* ── Linha de inputs: Bloco A (Objetivo + Tema) e Bloco D (Briefing livre) ── */}
+      {/* ── Linha de inputs: Bloco A (Objetivo + Tema) ── */}
       <div className="shrink-0 flex gap-4 px-6 py-4 bg-white border-b border-[#e8e8e4]">
         <div className="flex-1 flex flex-col gap-1.5">
           <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
@@ -276,18 +273,6 @@ export function PainelOutput({
             onChange={e => setTema(e.target.value)}
             rows={3}
             placeholder="Ex: lançamento da funcionalidade X, relatório de mercado Q1..."
-            className="w-full rounded-[8px] border border-[#e8e8e4] px-3 py-2 text-sm text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-[#1a6b5a]/30 focus:border-[#1a6b5a] transition placeholder:text-gray-300 bg-[#f9f9f7]"
-          />
-        </div>
-        <div className="flex-1 flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-            Briefing livre (direcionador)
-          </label>
-          <textarea
-            value={briefingLivre}
-            onChange={e => setBriefingLivre(e.target.value)}
-            rows={3}
-            placeholder="Ex: priorize linguagem simples, enfatize prova social e evite promessa exagerada..."
             className="w-full rounded-[8px] border border-[#e8e8e4] px-3 py-2 text-sm text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-[#1a6b5a]/30 focus:border-[#1a6b5a] transition placeholder:text-gray-300 bg-[#f9f9f7]"
           />
         </div>
