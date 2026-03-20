@@ -5,10 +5,12 @@ import {
   buildSystemPrompt,
   buildUserPrompt,
   buildPromptFromTemplate,
+  buildPromptBlocks,
   buildTemplateVars,
   UserPromptParams,
 } from "@/lib/prompts";
 import { BrandParameters, ICPArchetype } from "@/lib/types";
+import { getVehicleRule } from "@/lib/vehicle-rules";
 
 interface GerarRequest extends UserPromptParams {
   brandParams?: Partial<BrandParameters>;
@@ -36,6 +38,27 @@ function validatePublicContentQuality(params: {
     return isCarousel
       ? "Formato inválido da LLM de texto: campo 'publico' veio curto para conteúdo em múltiplos slides. Gere um texto mais completo."
       : "Formato inválido da LLM de texto: campo 'publico' veio curto. Gere um texto mais completo.";
+  }
+  return null;
+}
+
+function validateVehicleContract(params: {
+  canal: string;
+  formato: string;
+  content: string;
+  slides: SlidePromptItem[];
+}): string | null {
+  const rule = getVehicleRule(params.canal, params.formato);
+  if (!rule) return null;
+
+  if (/carrossel/i.test(params.formato) && params.slides.length < 2) {
+    return "Contrato do veículo inválido: carrossel deve retornar ao menos 2 slides com promptImagem.";
+  }
+  if (/reels/i.test(params.formato) && !/\[0-3s\]|\[4-30s\]|\[final\]/i.test(params.content)) {
+    return "Contrato do veículo inválido para Reels: esperado roteiro com blocos [0-3s], [4-30s] e [Final].";
+  }
+  if (/story/i.test(params.formato) && !/tela\s*1|slide\s*1/i.test(params.content)) {
+    return "Contrato do veículo inválido para Story: esperado conteúdo em sequência de telas.";
   }
   return null;
 }
@@ -75,6 +98,7 @@ export async function POST(req: NextRequest) {
         tema:        body.tema,
         persona,
         brandParams: body.brandParams ?? null,
+        briefingLivre: body.briefingLivre,
       });
       systemPrompt = buildPromptFromTemplate(
         iaConfig?.system_prompt_txt || "",
@@ -225,6 +249,15 @@ Nao inclua texto fora do JSON.`
         if (qualityError) {
           return NextResponse.json({ error: qualityError }, { status: 422 });
         }
+        const vehicleError = validateVehicleContract({
+          canal: body.canal,
+          formato: body.formato,
+          content,
+          slides,
+        });
+        if (vehicleError) {
+          return NextResponse.json({ error: vehicleError }, { status: 422 });
+        }
       } catch {
         return NextResponse.json(
           {
@@ -236,6 +269,7 @@ Nao inclua texto fora do JSON.`
       }
     }
 
+    const blocks = buildPromptBlocks({ ...body, persona });
     return NextResponse.json({
       content,
       slides,
@@ -246,6 +280,7 @@ Nao inclua texto fora do JSON.`
         temperature,
         maxTokens,
         finishReason: finishReason ?? "unknown",
+        blocks,
       },
     });
   } catch (err: unknown) {

@@ -24,6 +24,7 @@ export function CriarLayout({ icps, brandParams }: Props) {
   // ── Inputs do painel direito ─────────────────────────────────────────────
   const [objetivo, setObjetivo]   = useState("");
   const [tema, setTema]           = useState("");
+  const [briefingLivre, setBriefingLivre] = useState("");
 
   // ── Output ──────────────────────────────────────────────────────────────
   const [outputTexto, setOutputTexto]     = useState("");
@@ -56,8 +57,22 @@ export function CriarLayout({ icps, brandParams }: Props) {
     const imageBodyBase = {
       canal,
       tema,
+      briefingLivre,
       objetivo,
       persona,
+      personaContext: persona
+        ? {
+            nome: persona.icp_name ?? "",
+            dores: persona.pain_points ?? [],
+            valor: persona.value_prop ?? [],
+          }
+        : null,
+      blocks: {
+        A: { objetivo, tema },
+        B: { canal, formato },
+        C: { estilo },
+        D: { briefingLivre },
+      },
       brandParams: brandParams ?? null,
       formato,
       estilo,
@@ -77,6 +92,20 @@ export function CriarLayout({ icps, brandParams }: Props) {
             estilo,
             objetivo,
             tema,
+            briefingLivre,
+            personaContext: persona
+              ? {
+                  nome: persona.icp_name ?? "",
+                  dores: persona.pain_points ?? [],
+                  valor: persona.value_prop ?? [],
+                }
+              : null,
+            blocks: {
+              A: { objetivo, tema },
+              B: { canal, formato },
+              C: { estilo },
+              D: { briefingLivre },
+            },
             brandParams,
           }),
         });
@@ -178,6 +207,20 @@ export function CriarLayout({ icps, brandParams }: Props) {
             estilo,
             objetivo,
             tema,
+            briefingLivre,
+            personaContext: persona
+              ? {
+                  nome: persona.icp_name ?? "",
+                  dores: persona.pain_points ?? [],
+                  valor: persona.value_prop ?? [],
+                }
+              : null,
+            blocks: {
+              A: { objetivo, tema },
+              B: { canal, formato },
+              C: { estilo },
+              D: { briefingLivre },
+            },
             brandParams,
           }),
         });
@@ -252,6 +295,8 @@ export function CriarLayout({ icps, brandParams }: Props) {
         promptTextoDebug={promptTextoDebug}
         promptImagemDebug={promptImagemDebug}
         promptImagemDebugBySlide={promptImagemDebugBySlide}
+        briefingLivre={briefingLivre}
+        setBriefingLivre={setBriefingLivre}
         brandColorShortcuts={brandColorShortcuts}
       />
     </div>

@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
       estilo,
       copyGerada,
       imageDirective,
+      briefingLivre,
       slides,
     } =
       body as {
@@ -42,6 +43,7 @@ export async function POST(req: NextRequest) {
         estilo?: string;
         copyGerada?: string;
         imageDirective?: string;
+        briefingLivre?: string;
         slides?: SlidePromptItem[];
       };
 
@@ -69,6 +71,7 @@ export async function POST(req: NextRequest) {
         brandParams,
         copyGerada,
         imageDirective: primaryDirection,
+        briefingLivre,
       });
 
       const vars = buildTemplateVars({
@@ -81,6 +84,7 @@ export async function POST(req: NextRequest) {
         brandParams,
         copyGerada,
         imageDirective: primaryDirection,
+        briefingLivre,
       });
 
       const sysImg = (iaConfig?.system_prompt_img
@@ -100,8 +104,11 @@ export async function POST(req: NextRequest) {
       const alignmentBlock = templatePrompt
         ? "Use template constraints (style/colors/composition) only when they do not conflict with Primary visual direction."
         : "";
+      const briefingBlock = briefingLivre?.trim()
+        ? `User free briefing (priority over style preferences when conflict):\n${briefingLivre.trim()}`
+        : "";
       const finalPrompt = templatePrompt || directiveBlock
-        ? [directiveBlock, alignmentBlock, templatePrompt].filter(Boolean).join("\n\n")
+        ? [briefingBlock, directiveBlock, alignmentBlock, templatePrompt].filter(Boolean).join("\n\n")
         : fallbackPrompt;
 
       const res = await fetch(

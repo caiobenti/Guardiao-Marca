@@ -15,6 +15,7 @@
 // ───────────────────────────────────────────────────────────────────────────
 
 import { ICPArchetype, BrandParameters } from "./types";
+import { getVehicleRule } from "./vehicle-rules";
 
 // ─── Defaults editáveis via /parametro-ia ──────────────────────────────────
 // Estes textos são o ponto de partida do editor. O usuário pode modificá-los
@@ -174,6 +175,8 @@ export function buildTemplateVars(params: {
   copyGerada?: string
   /** Diretriz visual oculta produzida pela LLM de texto */
   imageDirective?: string
+  /** Direcionador livre (bloco D) */
+  briefingLivre?: string
 }): Record<string, string> {
   const {
     canal,
@@ -185,6 +188,7 @@ export function buildTemplateVars(params: {
     brandParams,
     copyGerada,
     imageDirective,
+    briefingLivre,
   } =
     params
   const trimmed = copyGerada?.trim() ?? ''
@@ -215,6 +219,7 @@ export function buildTemplateVars(params: {
     copy_imagem: imagem,
     copy_texto: texto,
     diretriz_imagem: imageDirective?.trim() ?? '',
+    briefing_livre: briefingLivre?.trim() ?? '',
     slide_count: slideCount,
     slides_json:
       '[{"index":1,"promptImagem":"..."},{"index":2,"promptImagem":"..."}]',
@@ -327,10 +332,80 @@ export interface UserPromptParams {
   estilo: string;
   objetivo: string;
   tema: string;
+  briefingLivre?: string;
+}
+
+export interface PromptBlocks {
+  blockA: {
+    objetivo: string;
+    tema: string;
+  };
+  blockB: {
+    canal: string;
+    formato: string;
+    ruleSummary: string;
+  };
+  blockC: {
+    estilo: string;
+    outputContract: string;
+  };
+  blockD: {
+    briefingLivre: string;
+  };
+  personaContext: {
+    nome: string;
+    dores: string;
+    valor: string;
+  };
+}
+
+function buildOutputContract(estilo: string): string {
+  if (estilo === "Só texto") {
+    return "Retornar apenas conteúdo textual final para publicação.";
+  }
+  if (estilo === "Só imagem") {
+    return "Retornar apenas direção visual objetiva para geração de imagem, sem copy pública.";
+  }
+  if (estilo === "Texto e imagem") {
+    return "Retornar JSON estrito com { publico, slides:[{ index, promptImagem }] }.";
+  }
+  return "Retornar saída coerente com o estilo selecionado.";
+}
+
+export function buildPromptBlocks(params: UserPromptParams): PromptBlocks {
+  const rule = getVehicleRule(params.canal, params.formato);
+  const ruleSummary = rule
+    ? `Schema: ${rule.outputSchema}\nLimite: ${rule.copyLimit}\nPreview crítico: ${rule.criticalPreview}\nGancho: ${rule.hookIntent}\nInstrução: ${rule.promptGuide}`
+    : "Sem regra específica para este veículo/formato. Use boas práticas do canal.";
+
+  return {
+    blockA: {
+      objetivo: params.objetivo.trim(),
+      tema: params.tema.trim(),
+    },
+    blockB: {
+      canal: params.canal,
+      formato: params.formato || "Livre",
+      ruleSummary,
+    },
+    blockC: {
+      estilo: params.estilo || "Livre",
+      outputContract: buildOutputContract(params.estilo),
+    },
+    blockD: {
+      briefingLivre: params.briefingLivre?.trim() ?? "",
+    },
+    personaContext: {
+      nome: params.persona?.icp_name ?? "",
+      dores: (params.persona?.pain_points ?? []).join(", "),
+      valor: (params.persona?.value_prop ?? []).join(", "),
+    },
+  };
 }
 
 export function buildUserPrompt(params: UserPromptParams): string {
-  const { persona, canal, formato, estilo, objetivo, tema } = params;
+  const { persona, canal, formato, estilo } = params;
+  const blocks = buildPromptBlocks(params);
 
   const personaSection = persona
     ? `## Persona-alvo
@@ -363,13 +438,25 @@ O pipeline de produto usa o primeiro slide para gerar a arte — seja explícito
 ${personaSection}
 
 ## Objetivo da mensagem
-${objetivo.trim() || "Não especificado. Use seu julgamento com base no tema e na voz da marca."}
+${blocks.blockA.objetivo || "Não especificado. Use seu julgamento com base no tema e na voz da marca."}
 
 ## Tema / Assunto
-${tema.trim()}
+${blocks.blockA.tema}
 ${instrImagemTexto}
 
-## Regras do canal (${canal})
+## Regras do veículo (Bloco B)
+Canal: ${blocks.blockB.canal}
+Formato: ${blocks.blockB.formato}
+${blocks.blockB.ruleSummary}
+
+## Contrato de saída (Bloco C)
+${blocks.blockC.outputContract}
+
+${blocks.blockD.briefingLivre
+    ? `## Direcionamento livre do usuário (Bloco D)\n${blocks.blockD.briefingLivre}\n`
+    : ""}
+
+## Regras adicionais do canal (${canal})
 ${canalCtx}
 
 ---
@@ -385,8 +472,9 @@ export function buildImagePrompt(params: {
   brandParams: Partial<BrandParameters> | null
   copyGerada?: string
   imageDirective?: string
+  briefingLivre?: string
 }): string {
-  const { canal, tema, objetivo, persona, brandParams, copyGerada, imageDirective } = params
+  const { canal, tema, objetivo, persona, brandParams, copyGerada, imageDirective, briefingLivre } = params
   const trimmed = copyGerada?.trim() ?? ''
   const directive = imageDirective?.trim() ?? ''
   const { imagem, texto } = trimmed
@@ -416,6 +504,9 @@ export function buildImagePrompt(params: {
       : '',
     ...fromStructured,
     directive ? `Primary scene direction (hidden imageDirective): ${directive.slice(0, 1500)}` : '',
+    briefingLivre?.trim()
+      ? `User direct guidance (highest intent priority): ${briefingLivre.trim().slice(0, 1500)}`
+      : '',
     trimmed && fromStructured.length === 0
       ? `Align the visual with this copy (mood and subject, no text in image): ${trimmed.slice(0, 2000)}`
       : '',

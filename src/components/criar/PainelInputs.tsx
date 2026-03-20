@@ -48,9 +48,9 @@ export function PainelInputs({
       {/* Scrollable selections */}
       <div className="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-5">
 
-        {/* Persona */}
+        {/* Persona (contexto auxiliar) */}
         <div className="flex flex-col gap-2">
-          <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Persona</label>
+          <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Contexto auxiliar: Persona</label>
           {icps.length === 0 ? (
             <p className="text-xs text-gray-300 leading-relaxed">
               Nenhuma persona ativa.<br />Cadastre em Parâmetros.
@@ -76,9 +76,9 @@ export function PainelInputs({
 
         <div className="border-t border-[#e8e8e4]" />
 
-        {/* Canal */}
+        {/* Bloco B: Veículo */}
         <div className="flex flex-col gap-2">
-          <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Canal</label>
+          <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Bloco B - Veículo (canal)</label>
           <div className="flex flex-wrap gap-1.5">
             {CANAL_OPTIONS.map(opt =>
               pill(opt, canal === opt, () => setCanal(canal === opt ? "" : opt))
@@ -86,12 +86,12 @@ export function PainelInputs({
           </div>
         </div>
 
-        {/* Formato — só se canal selecionado */}
+        {/* Bloco B: Formato — só se canal selecionado */}
         {canal && (
           <>
             <div className="border-t border-[#e8e8e4]" />
             <div className="flex flex-col gap-2">
-              <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Formato</label>
+              <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Bloco B - Formato</label>
               <div className="flex flex-wrap gap-1.5">
                 {(FORMATOS[canal] ?? []).map(opt =>
                   pill(opt, formato === opt, () => setFormato(formato === opt ? "" : opt))
@@ -103,9 +103,9 @@ export function PainelInputs({
 
         <div className="border-t border-[#e8e8e4]" />
 
-        {/* Estilo */}
+        {/* Bloco C: Estilo de saída */}
         <div className="flex flex-col gap-2">
-          <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Estilo</label>
+          <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Bloco C - Estilo</label>
           <div className="flex flex-wrap gap-1.5">
             {ESTILO_OPTIONS.map(opt =>
               pill(opt, estilo === opt, () => setEstilo(estilo === opt ? "" : opt))
