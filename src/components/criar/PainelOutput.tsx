@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { SlideLayerEditor } from "@/components/editor/SlideLayerEditor";
+import { useEffect, useRef, useState } from "react";
+import { EditableTextLayer, SlideLayerEditor } from "@/components/editor/SlideLayerEditor";
 
 interface OutputSlide {
   index: number;
@@ -47,14 +47,32 @@ export function PainelOutput({
 }: Props) {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingSlideIndex, setEditingSlideIndex] = useState(1);
+  const [savedLayersBySlide, setSavedLayersBySlide] = useState<
+    Record<number, EditableTextLayer[]>
+  >({});
+  const lastAutoOpenSignature = useRef("");
+  const displaySlides = outputSlides.length > 0
+    ? outputSlides
+    : outputImagem
+      ? [{ index: 1, imageUrl: outputImagem }]
+      : [];
+  const activeSavedLayers = savedLayersBySlide[editingSlideIndex] ?? [];
 
   // Auto-open no primeiro slide assim que as imagens chegarem.
   useEffect(() => {
-    if (outputSlides.length > 0) {
+    const signature =
+      displaySlides.length > 0
+        ? displaySlides.map((s) => `${s.index}:${s.imageUrl.slice(0, 32)}`).join("|")
+        : "";
+    if (displaySlides.length > 0 && signature !== lastAutoOpenSignature.current) {
+      lastAutoOpenSignature.current = signature;
       setIsEditorOpen(true);
-      setEditingSlideIndex(outputSlides[0].index);
+      setEditingSlideIndex(displaySlides[0].index);
     }
-  }, [outputSlides]);
+    if (displaySlides.length === 0) {
+      lastAutoOpenSignature.current = "";
+    }
+  }, [displaySlides]);
 
   return (
     <div className="flex-1 h-full flex flex-col overflow-hidden bg-[#f9f9f7]">
@@ -101,7 +119,7 @@ export function PainelOutput({
       {/* ── Área de output ────────────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
         {/* Empty state */}
-        {!loadingTexto && !loadingImagem && !outputTexto && !outputImagem && outputSlides.length === 0 && !erroTexto && !erroImagem && (
+        {!loadingTexto && !loadingImagem && !outputTexto && !outputImagem && displaySlides.length === 0 && !erroTexto && !erroImagem && (
           <div className="h-full flex items-center justify-center">
             <div className="text-center max-w-xs">
               <div className="text-3xl mb-3">✦</div>
@@ -114,8 +132,8 @@ export function PainelOutput({
         )}
 
         {/* Content area */}
-        {(loadingTexto || loadingImagem || outputTexto || outputImagem || outputSlides.length > 0 || erroTexto || erroImagem) && (
-          <div className="p-8 flex flex-col gap-6 max-w-[680px] mx-auto">
+        {(loadingTexto || loadingImagem || outputTexto || outputImagem || displaySlides.length > 0 || erroTexto || erroImagem) && (
+          <div className={`p-8 grid gap-6 ${estilo === "Texto e imagem" ? "lg:grid-cols-3" : "lg:grid-cols-2"} max-w-[1400px] mx-auto`}>
 
             {/* TEXT block */}
             {(estilo !== "Só imagem") && (
@@ -175,9 +193,9 @@ export function PainelOutput({
                 {!loadingImagem && erroImagem && (
                   <p className="text-sm text-red-500">{erroImagem}</p>
                 )}
-                {!loadingImagem && outputSlides.length > 0 && (
+                {!loadingImagem && displaySlides.length > 0 && (
                   <div className="grid grid-cols-1 gap-4">
-                    {outputSlides.map((slide) => (
+                    {displaySlides.map((slide) => (
                       <div key={slide.index} className="border border-stone-200 rounded-lg p-3">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-xs text-stone-500 font-medium">Slide {slide.index}</span>
@@ -201,13 +219,6 @@ export function PainelOutput({
                     ))}
                   </div>
                 )}
-                {!loadingImagem && outputSlides.length === 0 && outputImagem && (
-                  <img
-                    src={outputImagem}
-                    alt="Imagem gerada"
-                    className="w-full rounded-lg"
-                  />
-                )}
                 {showPromptDebug && promptImagemDebug && (
                   <details className="mt-6">
                     <summary className="text-xs text-gray-500 cursor-pointer">Prompt enviado para imagem</summary>
@@ -219,15 +230,52 @@ export function PainelOutput({
               </div>
             )}
 
+            {(estilo === "Só imagem" || estilo === "Texto e imagem") && (
+              <div className="bg-white rounded-[10px] border border-[#e8e8e4] p-8" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Editor de IMG</span>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditorOpen(true)}
+                    disabled={displaySlides.length === 0}
+                    className="text-xs text-[#1a6b5a] hover:underline disabled:opacity-40"
+                  >
+                    Abrir editor
+                  </button>
+                </div>
+                <p className="text-sm text-gray-500 mb-3">
+                  Quando clicar em editar, o editor abre em tela cheia com camadas.
+                </p>
+                {activeSavedLayers.length > 0 ? (
+                  <div className="space-y-2">
+                    <p className="text-xs text-stone-500 font-medium">
+                      Textos salvos no slide {editingSlideIndex}
+                    </p>
+                    <div className="max-h-56 overflow-auto border border-stone-200 rounded-lg p-2">
+                      {activeSavedLayers.map((l) => (
+                        <p key={l.id} className="text-xs text-stone-600 py-1 border-b last:border-b-0 border-stone-100">
+                          {l.text || "(sem texto)"}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-stone-400">Nenhum texto salvo ainda.</p>
+                )}
+              </div>
+            )}
+
           </div>
         )}
       </div>
-      {isEditorOpen && outputSlides.length > 0 && (
+      {isEditorOpen && displaySlides.length > 0 && (
         <SlideLayerEditor
-          slides={outputSlides}
+          slides={displaySlides}
           currentSlideIndex={editingSlideIndex}
           onChangeSlide={setEditingSlideIndex}
           brandColorShortcuts={brandColorShortcuts}
+          initialLayersBySlide={savedLayersBySlide}
+          onSave={setSavedLayersBySlide}
           onClose={() => setIsEditorOpen(false)}
         />
       )}

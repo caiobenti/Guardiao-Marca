@@ -9,7 +9,7 @@ interface SlideItem {
   imageUrl: string;
 }
 
-interface TextLayer {
+export interface EditableTextLayer {
   id: string;
   text: string;
   x: number;
@@ -31,6 +31,8 @@ interface Props {
   currentSlideIndex: number;
   onChangeSlide: (index: number) => void;
   brandColorShortcuts: string[];
+  initialLayersBySlide?: Record<number, EditableTextLayer[]>;
+  onSave?: (layersBySlide: Record<number, EditableTextLayer[]>) => void;
   onClose: () => void;
 }
 
@@ -42,14 +44,19 @@ export function SlideLayerEditor({
   currentSlideIndex,
   onChangeSlide,
   brandColorShortcuts,
+  initialLayersBySlide,
+  onSave,
   onClose,
 }: Props) {
   const stageRef = useRef<Konva.Stage>(null);
   const groupRef = useRef<Konva.Group>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
   const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null);
-  const [layersBySlide, setLayersBySlide] = useState<Record<number, TextLayer[]>>({});
+  const [layersBySlide, setLayersBySlide] = useState<Record<number, EditableTextLayer[]>>(
+    initialLayersBySlide ?? {}
+  );
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [saveMsg, setSaveMsg] = useState("");
   const currentSlide = useMemo(
     () => slides.find((s) => s.index === currentSlideIndex) ?? slides[0],
     [slides, currentSlideIndex]
@@ -78,7 +85,13 @@ export function SlideLayerEditor({
     [layers, selectedId]
   );
 
-  function setCurrentLayers(updater: (current: TextLayer[]) => TextLayer[]) {
+  useEffect(() => {
+    if (initialLayersBySlide) {
+      setLayersBySlide(initialLayersBySlide);
+    }
+  }, [initialLayersBySlide]);
+
+  function setCurrentLayers(updater: (current: EditableTextLayer[]) => EditableTextLayer[]) {
     setLayersBySlide((prev) => ({
       ...prev,
       [currentSlide.index]: updater(prev[currentSlide.index] ?? []),
@@ -109,9 +122,15 @@ export function SlideLayerEditor({
     setSelectedId(id);
   }
 
-  function updateSelected(patch: Partial<TextLayer>) {
+  function updateSelected(patch: Partial<EditableTextLayer>) {
     if (!selectedId) return;
     setCurrentLayers((prev) => prev.map((l) => (l.id === selectedId ? { ...l, ...patch } : l)));
+  }
+
+  function saveEdition() {
+    onSave?.(layersBySlide);
+    setSaveMsg("Edição salva");
+    window.setTimeout(() => setSaveMsg(""), 2000);
   }
 
   function deleteSelected() {
@@ -456,6 +475,13 @@ export function SlideLayerEditor({
           <div className="mt-auto flex gap-2">
             <button
               type="button"
+              onClick={saveEdition}
+              className="px-3 py-2 rounded-lg text-xs font-medium border border-[#1a6b5a] text-[#1a6b5a]"
+            >
+              Salvar edição
+            </button>
+            <button
+              type="button"
               onClick={exportPng}
               className="px-3 py-2 rounded-lg text-xs font-medium bg-[#1a6b5a] text-white"
             >
@@ -469,6 +495,7 @@ export function SlideLayerEditor({
               Fechar
             </button>
           </div>
+          {saveMsg && <p className="text-xs text-[#1a6b5a] font-medium">{saveMsg}</p>}
         </aside>
       </div>
     </div>
