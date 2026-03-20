@@ -44,6 +44,40 @@ interface Props {
   brandColorShortcuts: string[];
 }
 
+function estimateTextHeight(text: string, width: number, fontSize: number): number {
+  if (typeof window === "undefined") return Math.ceil(fontSize * 1.25);
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return Math.ceil(fontSize * 1.25);
+
+  ctx.font = `${fontSize}px Inter, sans-serif`;
+  const safeWidth = Math.max(1, width);
+  const paragraphs = (text || "").split("\n");
+  let lines = 0;
+
+  for (const paragraph of paragraphs) {
+    const words = paragraph.split(/\s+/).filter(Boolean);
+    if (words.length === 0) {
+      lines += 1;
+      continue;
+    }
+    let current = words[0];
+    for (let i = 1; i < words.length; i += 1) {
+      const candidate = `${current} ${words[i]}`;
+      if (ctx.measureText(candidate).width <= safeWidth) {
+        current = candidate;
+      } else {
+        lines += 1;
+        current = words[i];
+      }
+    }
+    lines += 1;
+  }
+
+  const lineHeight = fontSize * 1.25;
+  return Math.ceil(Math.max(1, lines) * lineHeight);
+}
+
 export function PainelOutput({
   objetivo,
   setObjetivo,
@@ -392,7 +426,7 @@ export function PainelOutput({
                               <Layer>
                                 {currentLayers.map((layer) => {
                                   const isSelected = layer.id === selectedId;
-                                  const textHeight = Math.ceil(layer.fontSize * 1.25);
+                                  const textHeight = estimateTextHeight(layer.text, layer.width, layer.fontSize);
                                   const boxHeight = textHeight + layer.paddingY * 2;
                                   return (
                                     <Group
