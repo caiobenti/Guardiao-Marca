@@ -110,7 +110,16 @@ export async function POST(req: NextRequest) {
     const data = await groqRes.json();
     const content: string = data.choices?.[0]?.message?.content ?? "";
 
-    return NextResponse.json({ content });
+    return NextResponse.json({
+      content,
+      promptDebug: {
+        system: systemPrompt,
+        user: userPrompt,
+        model,
+        temperature,
+        maxTokens,
+      },
+    });
   } catch (err: unknown) {
     console.error("[api/gerar] error:", err);
     const message = err instanceof Error ? err.message : String(err);

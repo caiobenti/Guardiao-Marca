@@ -27,6 +27,9 @@ export function CriarLayout({ icps, brandParams }: Props) {
   const [loadingImagem, setLoadingImagem] = useState(false);
   const [erroTexto, setErroTexto]         = useState("");
   const [erroImagem, setErroImagem]       = useState("");
+  const [promptTextoDebug, setPromptTextoDebug] = useState("");
+  const [promptImagemDebug, setPromptImagemDebug] = useState("");
+  const [showPromptDebug, setShowPromptDebug] = useState(false);
 
   const canGenerate = canal.trim() !== "" && tema.trim() !== "";
   const isGenerating = loadingTexto || loadingImagem;
@@ -34,6 +37,7 @@ export function CriarLayout({ icps, brandParams }: Props) {
   async function handleGerar() {
     if (!canGenerate || isGenerating) return;
     setOutputTexto(""); setOutputImagem(""); setErroTexto(""); setErroImagem("");
+    setPromptTextoDebug(""); setPromptImagemDebug("");
 
     const persona = icps.find(i => i.id === personaId) ?? null;
     const gerarTexto = estilo !== "Só imagem";
@@ -72,6 +76,11 @@ export function CriarLayout({ icps, brandParams }: Props) {
           return;
         }
         const content = dataText.content ?? "";
+        setPromptTextoDebug(
+          dataText.promptDebug
+            ? `MODEL: ${dataText.promptDebug.model}\nTEMPERATURE: ${dataText.promptDebug.temperature}\nMAX_TOKENS: ${dataText.promptDebug.maxTokens}\n\n=== SYSTEM ===\n${dataText.promptDebug.system ?? ""}\n\n=== USER ===\n${dataText.promptDebug.user ?? ""}`
+            : ""
+        );
         setOutputTexto(content);
 
         imagePhase = true;
@@ -83,7 +92,10 @@ export function CriarLayout({ icps, brandParams }: Props) {
         });
         const dataImg = await rImg.json();
         if (dataImg.error) setErroImagem(dataImg.error);
-        else setOutputImagem(dataImg.imageUrl ?? "");
+        else {
+          setOutputImagem(dataImg.imageUrl ?? "");
+          setPromptImagemDebug(dataImg.promptDebug?.final ?? "");
+        }
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         if (imagePhase) setErroImagem(msg);
@@ -113,7 +125,14 @@ export function CriarLayout({ icps, brandParams }: Props) {
         });
         const data = await r.json();
         if (data.error) setErroTexto(data.error);
-        else setOutputTexto(data.content ?? "");
+        else {
+          setOutputTexto(data.content ?? "");
+          setPromptTextoDebug(
+            data.promptDebug
+              ? `MODEL: ${data.promptDebug.model}\nTEMPERATURE: ${data.promptDebug.temperature}\nMAX_TOKENS: ${data.promptDebug.maxTokens}\n\n=== SYSTEM ===\n${data.promptDebug.system ?? ""}\n\n=== USER ===\n${data.promptDebug.user ?? ""}`
+              : ""
+          );
+        }
       } catch (e) {
         setErroTexto(e instanceof Error ? e.message : String(e));
       } finally {
@@ -132,7 +151,10 @@ export function CriarLayout({ icps, brandParams }: Props) {
         });
         const data = await r.json();
         if (data.error) setErroImagem(data.error);
-        else setOutputImagem(data.imageUrl ?? "");
+        else {
+          setOutputImagem(data.imageUrl ?? "");
+          setPromptImagemDebug(data.promptDebug?.final ?? "");
+        }
       } catch (e) {
         setErroImagem(e instanceof Error ? e.message : String(e));
       } finally {
@@ -163,6 +185,10 @@ export function CriarLayout({ icps, brandParams }: Props) {
         erroTexto={erroTexto}
         erroImagem={erroImagem}
         estilo={estilo}
+        showPromptDebug={showPromptDebug}
+        setShowPromptDebug={setShowPromptDebug}
+        promptTextoDebug={promptTextoDebug}
+        promptImagemDebug={promptImagemDebug}
       />
     </div>
   );

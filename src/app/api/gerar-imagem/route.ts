@@ -92,6 +92,12 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       imageUrl: `data:${contentType};base64,${base64}`,
+      promptDebug: {
+        final: finalPrompt,
+        system: sysImg,
+        user: usrImg,
+        fallback: fallbackPrompt,
+      },
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);

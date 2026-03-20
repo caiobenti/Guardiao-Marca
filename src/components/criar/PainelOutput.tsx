@@ -10,9 +10,29 @@ interface Props {
   erroTexto: string;
   erroImagem: string;
   estilo: string;
+  showPromptDebug: boolean;
+  setShowPromptDebug: (v: boolean) => void;
+  promptTextoDebug: string;
+  promptImagemDebug: string;
 }
 
-export function PainelOutput({ objetivo, setObjetivo, tema, setTema, outputTexto, outputImagem, loadingTexto, loadingImagem, erroTexto, erroImagem, estilo }: Props) {
+export function PainelOutput({
+  objetivo,
+  setObjetivo,
+  tema,
+  setTema,
+  outputTexto,
+  outputImagem,
+  loadingTexto,
+  loadingImagem,
+  erroTexto,
+  erroImagem,
+  estilo,
+  showPromptDebug,
+  setShowPromptDebug,
+  promptTextoDebug,
+  promptImagemDebug,
+}: Props) {
   return (
     <div className="flex-1 h-full flex flex-col overflow-hidden bg-[#f9f9f7]">
 
@@ -42,6 +62,17 @@ export function PainelOutput({ objetivo, setObjetivo, tema, setTema, outputTexto
             className="w-full rounded-[8px] border border-[#e8e8e4] px-3 py-2 text-sm text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-[#1a6b5a]/30 focus:border-[#1a6b5a] transition placeholder:text-gray-300 bg-[#f9f9f7]"
           />
         </div>
+      </div>
+      <div className="shrink-0 px-6 py-2 bg-white border-b border-[#e8e8e4]">
+        <label className="inline-flex items-center gap-2 text-xs text-gray-500 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showPromptDebug}
+            onChange={(e) => setShowPromptDebug(e.target.checked)}
+            className="accent-[#1a6b5a]"
+          />
+          Mostrar prompt enviado (debug temporário)
+        </label>
       </div>
 
       {/* ── Área de output ────────────────────────────────────────────────── */}
@@ -86,6 +117,14 @@ export function PainelOutput({ objetivo, setObjetivo, tema, setTema, outputTexto
                 {!loadingTexto && outputTexto && (
                   <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans leading-relaxed">{outputTexto}</pre>
                 )}
+                {showPromptDebug && promptTextoDebug && (
+                  <details className="mt-6">
+                    <summary className="text-xs text-gray-500 cursor-pointer">Prompt enviado para texto</summary>
+                    <pre className="mt-3 text-xs text-gray-600 whitespace-pre-wrap font-mono bg-stone-50 border border-stone-200 rounded-lg p-3">
+                      {promptTextoDebug}
+                    </pre>
+                  </details>
+                )}
               </div>
             )}
 
@@ -119,6 +158,14 @@ export function PainelOutput({ objetivo, setObjetivo, tema, setTema, outputTexto
                     alt="Imagem gerada"
                     className="w-full rounded-lg"
                   />
+                )}
+                {showPromptDebug && promptImagemDebug && (
+                  <details className="mt-6">
+                    <summary className="text-xs text-gray-500 cursor-pointer">Prompt enviado para imagem</summary>
+                    <pre className="mt-3 text-xs text-gray-600 whitespace-pre-wrap font-mono bg-stone-50 border border-stone-200 rounded-lg p-3">
+                      {promptImagemDebug}
+                    </pre>
+                  </details>
                 )}
               </div>
             )}
