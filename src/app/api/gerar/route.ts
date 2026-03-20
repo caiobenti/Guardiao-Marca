@@ -103,7 +103,6 @@ export async function POST(req: NextRequest) {
         persona,
         brandParams: body.brandParams ?? null,
         briefingLivre: body.briefingLivre,
-        promptBlocksConfig,
       });
       systemPrompt = buildPromptFromTemplate(
         iaConfig?.system_prompt_txt || "",
