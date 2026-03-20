@@ -82,6 +82,11 @@ export function PainelOutput({
     () => displaySlides.find((s) => s.index === editingSlideIndex) ?? displaySlides[0],
     [displaySlides, editingSlideIndex]
   );
+  const baseWidth = bgImage?.naturalWidth ?? 1024;
+  const baseHeight = bgImage?.naturalHeight ?? 1024;
+  const fitScale = Math.min(520 / baseWidth, 520 / baseHeight, 1);
+  const stageBoxWidth = Math.round(baseWidth * fitScale);
+  const stageBoxHeight = Math.round(baseHeight * fitScale);
   const currentLayers = savedLayersBySlide[currentSlide?.index ?? 1] ?? [];
   const activeSavedLayers = currentLayers;
 
@@ -348,95 +353,106 @@ export function PainelOutput({
                     </div>
                     <div className="rounded-lg border border-stone-200 bg-stone-100 p-2 overflow-auto">
                       <div className="w-full flex justify-center">
-                        <Stage
-                          ref={stageRef}
-                          width={1024}
-                          height={1024}
-                          scaleX={0.38}
-                          scaleY={0.38}
-                          onMouseDown={(e) => {
-                            if (e.target === e.target.getStage()) setSelectedId(null);
-                          }}
-                          className="bg-white border border-stone-300 origin-top"
+                        <div
+                          className="border border-stone-300 bg-white origin-top-left overflow-hidden"
+                          style={{ width: stageBoxWidth, height: stageBoxHeight }}
                         >
-                          <Layer>
-                            {bgImage && (
-                              <KonvaImage image={bgImage} width={1024} height={1024} />
-                            )}
-                          </Layer>
-                          <Layer>
-                            {currentLayers.map((layer) => {
-                              const isSelected = layer.id === selectedId;
-                              const textHeight = Math.ceil(layer.fontSize * 1.25);
-                              const boxHeight = textHeight + layer.paddingY * 2;
-                              return (
-                                <Group
-                                  key={layer.id}
-                                  ref={isSelected ? groupRef : undefined}
-                                  x={layer.x}
-                                  y={layer.y}
-                                  draggable={!layer.locked}
-                                  opacity={layer.opacity}
-                                  onClick={() => setSelectedId(layer.id)}
-                                  onTap={() => setSelectedId(layer.id)}
-                                  onDragEnd={(e) => {
-                                    setCurrentLayers((prev) =>
-                                      prev.map((l) =>
-                                        l.id === layer.id ? { ...l, x: e.target.x(), y: e.target.y() } : l
-                                      )
-                                    );
-                                  }}
-                                  onTransformEnd={(e) => {
-                                    const node = e.target as Konva.Group;
-                                    const scaleX = node.scaleX();
-                                    const scaleY = node.scaleY();
-                                    node.scaleX(1);
-                                    node.scaleY(1);
-                                    setCurrentLayers((prev) =>
-                                      prev.map((l) =>
-                                        l.id === layer.id
-                                          ? {
-                                              ...l,
-                                              x: node.x(),
-                                              y: node.y(),
-                                              width: Math.max(120, l.width * scaleX),
-                                              fontSize: Math.max(14, Math.round(l.fontSize * scaleY)),
-                                            }
-                                          : l
-                                      )
-                                    );
-                                  }}
-                                >
-                                  <Rect
-                                    x={0}
-                                    y={0}
-                                    width={layer.width + layer.paddingX * 2}
-                                    height={boxHeight}
-                                    cornerRadius={layer.radius}
-                                    fill={layer.bgColor}
-                                    opacity={layer.bgOpacity}
+                          <div
+                            style={{
+                              transform: `scale(${fitScale})`,
+                              transformOrigin: "top left",
+                              width: baseWidth,
+                              height: baseHeight,
+                            }}
+                          >
+                            <Stage
+                              ref={stageRef}
+                              width={baseWidth}
+                              height={baseHeight}
+                              onMouseDown={(e) => {
+                                if (e.target === e.target.getStage()) setSelectedId(null);
+                              }}
+                            >
+                              <Layer>
+                                {bgImage && (
+                                  <KonvaImage image={bgImage} width={baseWidth} height={baseHeight} />
+                                )}
+                              </Layer>
+                              <Layer>
+                                {currentLayers.map((layer) => {
+                                  const isSelected = layer.id === selectedId;
+                                  const textHeight = Math.ceil(layer.fontSize * 1.25);
+                                  const boxHeight = textHeight + layer.paddingY * 2;
+                                  return (
+                                    <Group
+                                      key={layer.id}
+                                      ref={isSelected ? groupRef : undefined}
+                                      x={layer.x}
+                                      y={layer.y}
+                                      draggable={!layer.locked}
+                                      opacity={layer.opacity}
+                                      onClick={() => setSelectedId(layer.id)}
+                                      onTap={() => setSelectedId(layer.id)}
+                                      onDragEnd={(e) => {
+                                        setCurrentLayers((prev) =>
+                                          prev.map((l) =>
+                                            l.id === layer.id ? { ...l, x: e.target.x(), y: e.target.y() } : l
+                                          )
+                                        );
+                                      }}
+                                      onTransformEnd={(e) => {
+                                        const node = e.target as Konva.Group;
+                                        const scaleX = node.scaleX();
+                                        const scaleY = node.scaleY();
+                                        node.scaleX(1);
+                                        node.scaleY(1);
+                                        setCurrentLayers((prev) =>
+                                          prev.map((l) =>
+                                            l.id === layer.id
+                                              ? {
+                                                  ...l,
+                                                  x: node.x(),
+                                                  y: node.y(),
+                                                  width: Math.max(120, l.width * scaleX),
+                                                  fontSize: Math.max(14, Math.round(l.fontSize * scaleY)),
+                                                }
+                                              : l
+                                          )
+                                        );
+                                      }}
+                                    >
+                                      <Rect
+                                        x={0}
+                                        y={0}
+                                        width={layer.width + layer.paddingX * 2}
+                                        height={boxHeight}
+                                        cornerRadius={layer.radius}
+                                        fill={layer.bgColor}
+                                        opacity={layer.bgOpacity}
+                                      />
+                                      <Text
+                                        text={layer.text}
+                                        x={layer.paddingX}
+                                        y={layer.paddingY}
+                                        width={layer.width}
+                                        fontSize={layer.fontSize}
+                                        fill={layer.textColor}
+                                        fontFamily="Inter, sans-serif"
+                                      />
+                                    </Group>
+                                  );
+                                })}
+                                {selectedId && (
+                                  <Transformer
+                                    ref={transformerRef}
+                                    rotateEnabled={false}
+                                    enabledAnchors={["top-left", "top-right", "bottom-left", "bottom-right"]}
                                   />
-                                  <Text
-                                    text={layer.text}
-                                    x={layer.paddingX}
-                                    y={layer.paddingY}
-                                    width={layer.width}
-                                    fontSize={layer.fontSize}
-                                    fill={layer.textColor}
-                                    fontFamily="Inter, sans-serif"
-                                  />
-                                </Group>
-                              );
-                            })}
-                            {selectedId && (
-                              <Transformer
-                                ref={transformerRef}
-                                rotateEnabled={false}
-                                enabledAnchors={["top-left", "top-right", "bottom-left", "bottom-right"]}
-                              />
-                            )}
-                          </Layer>
-                        </Stage>
+                                )}
+                              </Layer>
+                            </Stage>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
