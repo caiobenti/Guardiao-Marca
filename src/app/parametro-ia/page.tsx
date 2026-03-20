@@ -22,10 +22,12 @@ export default async function ParametroIAPage() {
     .maybeSingle();
 
   return (
-    <ParametroIAClient
-      userId={userId}
-      userCode={CURRENT_USER_CODE}
-      initialConfig={iaConfig ?? null}
-    />
+    <div className="h-full overflow-y-auto bg-[#f9f9f7]">
+      <ParametroIAClient
+        userId={userId}
+        userCode={CURRENT_USER_CODE}
+        initialConfig={iaConfig ?? null}
+      />
+    </div>
   );
 }
