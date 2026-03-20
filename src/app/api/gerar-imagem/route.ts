@@ -72,9 +72,15 @@ export async function POST(req: NextRequest) {
       : ""
     ).trim();
 
+    const templatePrompt = [sysImg, usrImg].filter(Boolean).join("\n\n");
+    const directive = (imageDirective ?? "").trim();
+    const directiveBlock = directive
+      ? `Hidden image direction from text LLM (must guide the scene):\n${directive}`
+      : "";
+
     const finalPrompt =
-      sysImg || usrImg
-        ? [sysImg, usrImg].filter(Boolean).join("\n\n")
+      templatePrompt
+        ? [directiveBlock, templatePrompt].filter(Boolean).join("\n\n")
         : fallbackPrompt;
 
     // FLUX.1-schnell via Hugging Face — gratuito

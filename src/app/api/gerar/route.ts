@@ -6,7 +6,6 @@ import {
   buildUserPrompt,
   buildPromptFromTemplate,
   buildTemplateVars,
-  parseCopyForImageGeneration,
   UserPromptParams,
 } from "@/lib/prompts";
 import { BrandParameters, ICPArchetype } from "@/lib/types";
@@ -138,16 +137,39 @@ Nao inclua texto fora do JSON.`
           publico?: unknown;
           promptImagem?: unknown;
         };
-        if (typeof parsed.publico === "string") {
+        if (typeof parsed.publico === "string" && parsed.publico.trim()) {
           content = parsed.publico.trim();
+        } else {
+          return NextResponse.json(
+            {
+              error:
+                "Formato inválido da LLM de texto: campo 'publico' ausente ou vazio no modo Texto e imagem.",
+            },
+            { status: 422 }
+          );
         }
-        if (typeof parsed.promptImagem === "string") {
+        if (
+          typeof parsed.promptImagem === "string" &&
+          parsed.promptImagem.trim()
+        ) {
           imageDirective = parsed.promptImagem.trim();
+        } else {
+          return NextResponse.json(
+            {
+              error:
+                "Formato inválido da LLM de texto: campo 'promptImagem' ausente ou vazio no modo Texto e imagem.",
+            },
+            { status: 422 }
+          );
         }
       } catch {
-        // fallback legada: tenta extrair de "Imagem:" visível
-        const parsedLegacy = parseCopyForImageGeneration(rawContent);
-        imageDirective = parsedLegacy.imagem;
+        return NextResponse.json(
+          {
+            error:
+              "Formato inválido da LLM de texto no modo Texto e imagem. Esperado JSON com 'publico' e 'promptImagem'.",
+          },
+          { status: 422 }
+        );
       }
     }
 
