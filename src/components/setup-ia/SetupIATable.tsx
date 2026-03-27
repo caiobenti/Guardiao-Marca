@@ -42,7 +42,6 @@ export default function SetupIATable({ userId, userCode, initialRows }: Props) {
   const [isDirty, setIsDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
-  const [search, setSearch] = useState("");
   const [channelFilter, setChannelFilter] = useState("Todos");
 
   const initialSnapshotRef = useRef(JSON.stringify(normalizeRows(initialRows)));
@@ -60,26 +59,11 @@ export default function SetupIATable({ userId, userCode, initialRows }: Props) {
   );
 
   const tableRows = useMemo(() => {
-    const term = search.trim().toLowerCase();
     return rows.filter((row) => {
       const channelOk = channelFilter === "Todos" || row.channel === channelFilter;
-      if (!channelOk) return false;
-      if (!term) return true;
-      return [
-        row.channel,
-        row.format,
-        row.output_schema,
-        row.copy_limit,
-        row.critical_preview,
-        row.hook,
-        row.intent,
-        row.prompt_guide,
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(term);
+      return channelOk;
     });
-  }, [rows, search, channelFilter]);
+  }, [rows, channelFilter]);
 
   function updateCell(
     rowKey: string,
@@ -157,11 +141,11 @@ export default function SetupIATable({ userId, userCode, initialRows }: Props) {
           </button>
         </div>
       </div>
-      <div className="mt-4 grid grid-cols-1 md:grid-cols-[220px,1fr] gap-3">
+      <div className="mt-4">
         <select
           value={channelFilter}
           onChange={(e) => setChannelFilter(e.target.value)}
-          className="w-full text-sm border border-stone-300 rounded-lg px-3 py-2 bg-white"
+          className="w-full max-w-[320px] text-sm border border-stone-300 rounded-lg px-3 py-2 bg-white"
         >
           {channels.map((channel) => (
             <option key={channel} value={channel}>
@@ -169,12 +153,6 @@ export default function SetupIATable({ userId, userCode, initialRows }: Props) {
             </option>
           ))}
         </select>
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar em formato, schema, limites, hook, intent ou prompt guide..."
-          className="w-full text-sm border border-stone-300 rounded-lg px-3 py-2 bg-white"
-        />
       </div>
       <p className="mt-2 text-xs text-stone-500">
         Mostrando {tableRows.length} de {rows.length} regras.
@@ -188,16 +166,16 @@ export default function SetupIATable({ userId, userCode, initialRows }: Props) {
           </div>
         ) : (
           <div className="overflow-x-auto max-h-[calc(100vh-250px)]">
-            <table className="min-w-[1580px] w-full table-fixed">
+            <table className="min-w-[1820px] w-full table-fixed">
               <colgroup>
                 <col className="w-[120px]" />
                 <col className="w-[160px]" />
+                <col className="w-[260px]" />
+                <col className="w-[190px]" />
+                <col className="w-[260px]" />
+                <col className="w-[230px]" />
                 <col className="w-[220px]" />
-                <col className="w-[160px]" />
-                <col className="w-[220px]" />
-                <col className="w-[180px]" />
-                <col className="w-[170px]" />
-                <col className="w-[350px]" />
+                <col className="w-[380px]" />
               </colgroup>
               <thead className="bg-stone-50 border-b border-stone-200 sticky top-0 z-10">
                 <tr className="text-left text-xs uppercase tracking-wide text-stone-500">
@@ -216,41 +194,46 @@ export default function SetupIATable({ userId, userCode, initialRows }: Props) {
                   const rowKey = `${row.channel}::${row.format}`;
                   return (
                   <tr key={`${row.channel}-${row.format}`} className="border-b border-stone-100 align-top odd:bg-white even:bg-stone-50/35 hover:bg-emerald-50/30">
-                    <td className="px-3 py-3 text-sm text-stone-700">{row.channel}</td>
-                    <td className="px-3 py-3 text-sm text-stone-700">{row.format}</td>
+                    <td className="px-3 py-3 text-sm text-stone-700 whitespace-normal break-words">{row.channel}</td>
+                    <td className="px-3 py-3 text-sm text-stone-700 whitespace-normal break-words">{row.format}</td>
                     <td className="px-3 py-3">
-                      <input
+                      <textarea
                         value={row.output_schema}
                         onChange={(e) => updateCell(rowKey, "output_schema", e.target.value)}
-                        className="w-full text-sm border border-stone-300 rounded-lg px-3 py-2 bg-white"
+                        rows={2}
+                        className="w-full text-sm leading-relaxed border border-stone-300 rounded-lg px-3 py-2 resize-y min-h-[72px] bg-white"
                       />
                     </td>
                     <td className="px-3 py-3">
-                      <input
+                      <textarea
                         value={row.copy_limit}
                         onChange={(e) => updateCell(rowKey, "copy_limit", e.target.value)}
-                        className="w-full text-sm border border-stone-300 rounded-lg px-3 py-2 bg-white"
+                        rows={2}
+                        className="w-full text-sm leading-relaxed border border-stone-300 rounded-lg px-3 py-2 resize-y min-h-[72px] bg-white"
                       />
                     </td>
                     <td className="px-3 py-3">
-                      <input
+                      <textarea
                         value={row.critical_preview}
                         onChange={(e) => updateCell(rowKey, "critical_preview", e.target.value)}
-                        className="w-full text-sm border border-stone-300 rounded-lg px-3 py-2 bg-white"
+                        rows={2}
+                        className="w-full text-sm leading-relaxed border border-stone-300 rounded-lg px-3 py-2 resize-y min-h-[72px] bg-white"
                       />
                     </td>
                     <td className="px-3 py-3">
-                      <input
+                      <textarea
                         value={row.hook}
                         onChange={(e) => updateCell(rowKey, "hook", e.target.value)}
-                        className="w-full text-sm border border-stone-300 rounded-lg px-3 py-2 bg-white"
+                        rows={2}
+                        className="w-full text-sm leading-relaxed border border-stone-300 rounded-lg px-3 py-2 resize-y min-h-[72px] bg-white"
                       />
                     </td>
                     <td className="px-3 py-3">
-                      <input
+                      <textarea
                         value={row.intent}
                         onChange={(e) => updateCell(rowKey, "intent", e.target.value)}
-                        className="w-full text-sm border border-stone-300 rounded-lg px-3 py-2 bg-white"
+                        rows={2}
+                        className="w-full text-sm leading-relaxed border border-stone-300 rounded-lg px-3 py-2 resize-y min-h-[72px] bg-white"
                       />
                     </td>
                     <td className="px-3 py-3">
