@@ -39,7 +39,7 @@ export function CriarLayout({ icps, brandParams }: Props) {
   const [showPromptDebug, setShowPromptDebug] = useState(false);
   const brandColorShortcuts = (brandParams?.color_palette ?? []).filter(Boolean);
 
-  const canGenerate = canal.trim() !== "" && tema.trim() !== "";
+  const canGenerate = canal.trim() !== "" && formato.trim() !== "" && tema.trim() !== "";
   const isGenerating = loadingTexto || loadingImagem;
 
   async function handleGerar() {
