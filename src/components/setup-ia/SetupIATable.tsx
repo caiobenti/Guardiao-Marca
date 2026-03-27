@@ -42,7 +42,6 @@ export default function SetupIATable({ userId, userCode, initialRows }: Props) {
   const [isDirty, setIsDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
-  const [channelFilter, setChannelFilter] = useState("Todos");
 
   const initialSnapshotRef = useRef(JSON.stringify(normalizeRows(initialRows)));
 
@@ -53,17 +52,7 @@ export default function SetupIATable({ userId, userCode, initialRows }: Props) {
 
   const hasRows = rows.length > 0;
 
-  const channels = useMemo(
-    () => ["Todos", ...Array.from(new Set(rows.map((row) => row.channel))).sort()],
-    [rows]
-  );
-
-  const tableRows = useMemo(() => {
-    return rows.filter((row) => {
-      const channelOk = channelFilter === "Todos" || row.channel === channelFilter;
-      return channelOk;
-    });
-  }, [rows, channelFilter]);
+  const tableRows = useMemo(() => rows, [rows]);
 
   function updateCell(
     rowKey: string,
@@ -141,22 +130,6 @@ export default function SetupIATable({ userId, userCode, initialRows }: Props) {
           </button>
         </div>
       </div>
-      <div className="mt-4">
-        <select
-          value={channelFilter}
-          onChange={(e) => setChannelFilter(e.target.value)}
-          className="w-full max-w-[320px] text-sm border border-stone-300 rounded-lg px-3 py-2 bg-white"
-        >
-          {channels.map((channel) => (
-            <option key={channel} value={channel}>
-              Canal: {channel}
-            </option>
-          ))}
-        </select>
-      </div>
-      <p className="mt-2 text-xs text-stone-500">
-        Mostrando {tableRows.length} de {rows.length} regras.
-      </p>
       </div>
 
       <div className="mt-5 bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
