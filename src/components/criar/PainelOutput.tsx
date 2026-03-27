@@ -45,10 +45,18 @@ interface Props {
   brandColorShortcuts: string[];
 }
 
-function estimateTextHeight(text: string, width: number, fontSize: number): number {
-  if (typeof window === "undefined") return Math.ceil(fontSize * 1.25);
+let textMeasureCtx: CanvasRenderingContext2D | null = null;
+
+function getTextMeasureCtx(): CanvasRenderingContext2D | null {
+  if (typeof window === "undefined") return null;
+  if (textMeasureCtx) return textMeasureCtx;
   const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
+  textMeasureCtx = canvas.getContext("2d");
+  return textMeasureCtx;
+}
+
+function estimateTextHeight(text: string, width: number, fontSize: number): number {
+  const ctx = getTextMeasureCtx();
   if (!ctx) return Math.ceil(fontSize * 1.25);
 
   ctx.font = `${fontSize}px Inter, sans-serif`;
@@ -139,10 +147,16 @@ export function PainelOutput({
 
   useEffect(() => {
     if (!currentSlide) return;
+    let active = true;
     const img = new window.Image();
     img.crossOrigin = "anonymous";
     img.src = currentSlide.imageUrl;
-    img.onload = () => setBgImage(img);
+    img.onload = () => {
+      if (active) setBgImage(img);
+    };
+    return () => {
+      active = false;
+    };
   }, [currentSlide?.imageUrl]);
 
   useEffect(() => {

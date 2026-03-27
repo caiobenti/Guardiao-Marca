@@ -9,6 +9,22 @@ interface OutputSlide {
   imageUrl: string;
 }
 
+interface PersonaContext {
+  nome: string;
+  dores: string[];
+  valor: string[];
+}
+
+async function parseJsonResponse<T>(response: Response): Promise<T> {
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message =
+      typeof data?.error === "string" ? data.error : `HTTP ${response.status}`;
+    throw new Error(message);
+  }
+  return data as T;
+}
+
 interface Props {
   icps: ICPArchetype[];
   brandParams?: Partial<BrandParameters>;
@@ -50,26 +66,40 @@ export function CriarLayout({ icps, brandParams }: Props) {
     setPromptImagemDebugBySlide({});
 
     const persona = icps.find(i => i.id === personaId) ?? null;
+    const personaContext: PersonaContext | null = persona
+      ? {
+          nome: persona.icp_name ?? "",
+          dores: persona.pain_points ?? [],
+          valor: persona.value_prop ?? [],
+        }
+      : null;
+    const blocks = {
+      A: { objetivo, tema },
+      B: { canal, formato },
+      C: { estilo },
+    };
     const gerarTexto = estilo !== "Só imagem";
     const gerarImagem = estilo === "Só imagem" || estilo === "Texto e imagem";
+
+    const textBodyBase = {
+      persona,
+      canal,
+      formato,
+      estilo,
+      objetivo,
+      tema,
+      personaContext,
+      blocks,
+      brandParams,
+    };
 
     const imageBodyBase = {
       canal,
       tema,
       objetivo,
       persona,
-      personaContext: persona
-        ? {
-            nome: persona.icp_name ?? "",
-            dores: persona.pain_points ?? [],
-            valor: persona.value_prop ?? [],
-          }
-        : null,
-      blocks: {
-        A: { objetivo, tema },
-        B: { canal, formato },
-        C: { estilo },
-      },
+      personaContext,
+      blocks,
       brandParams: brandParams ?? null,
       formato,
       estilo,
@@ -82,29 +112,21 @@ export function CriarLayout({ icps, brandParams }: Props) {
         const rText = await fetch("/api/gerar", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            persona,
-            canal,
-            formato,
-            estilo,
-            objetivo,
-            tema,
-            personaContext: persona
-              ? {
-                  nome: persona.icp_name ?? "",
-                  dores: persona.pain_points ?? [],
-                  valor: persona.value_prop ?? [],
-                }
-              : null,
-            blocks: {
-              A: { objetivo, tema },
-              B: { canal, formato },
-              C: { estilo },
-            },
-            brandParams,
-          }),
+          body: JSON.stringify(textBodyBase),
         });
-        const dataText = await rText.json();
+        const dataText = await parseJsonResponse<{
+          error?: string;
+          content?: string;
+          slides?: Array<{ index?: number; promptImagem?: string }>;
+          promptDebug?: {
+            model?: string;
+            temperature?: number;
+            maxTokens?: number;
+            finishReason?: string;
+            system?: string;
+            user?: string;
+          };
+        }>(rText);
         if (dataText.error) {
           setErroTexto(dataText.error);
           return;
@@ -133,16 +155,23 @@ export function CriarLayout({ icps, brandParams }: Props) {
             slides,
           }),
         });
-        const dataImg = await rImg.json();
+        const dataImg = await parseJsonResponse<{
+          error?: string;
+          imageUrl?: string;
+          images?: Array<{ index?: number; imageUrl?: string; promptDebug?: { final?: string } }>;
+          promptDebug?: { final?: string };
+          promptDebugBySlide?: Array<{ index?: number; final?: string }>;
+        }>(rImg);
         if (dataImg.error) setErroImagem(dataImg.error);
         else {
           if (Array.isArray(dataImg.images)) {
             setOutputSlides(
               dataImg.images
-                .filter((img: { index?: number; imageUrl?: string }) =>
-                  Number.isFinite(img?.index) && Boolean(img?.imageUrl)
+                .filter(
+                  (img): img is { index: number; imageUrl: string; promptDebug?: { final?: string } } =>
+                    Number.isFinite(img?.index) && typeof img?.imageUrl === "string"
                 )
-                .map((img: { index: number; imageUrl: string }) => ({
+                .map((img) => ({
                   index: img.index,
                   imageUrl: img.imageUrl,
                 }))
@@ -153,8 +182,11 @@ export function CriarLayout({ icps, brandParams }: Props) {
           setPromptImagemDebug(
             Array.isArray(dataImg.images)
               ? dataImg.images
+                  .filter((img): img is { index: number; promptDebug?: { final?: string } } =>
+                    Number.isFinite(img?.index)
+                  )
                   .map(
-                    (img: { index: number; promptDebug?: { final?: string } }) =>
+                    (img) =>
                       `--- Slide ${img.index} ---\n${img.promptDebug?.final ?? ""}`
                   )
                   .join("\n\n")
@@ -195,29 +227,20 @@ export function CriarLayout({ icps, brandParams }: Props) {
         const r = await fetch("/api/gerar", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            persona,
-            canal,
-            formato,
-            estilo,
-            objetivo,
-            tema,
-            personaContext: persona
-              ? {
-                  nome: persona.icp_name ?? "",
-                  dores: persona.pain_points ?? [],
-                  valor: persona.value_prop ?? [],
-                }
-              : null,
-            blocks: {
-              A: { objetivo, tema },
-              B: { canal, formato },
-              C: { estilo },
-            },
-            brandParams,
-          }),
+          body: JSON.stringify(textBodyBase),
         });
-        const data = await r.json();
+        const data = await parseJsonResponse<{
+          error?: string;
+          content?: string;
+          promptDebug?: {
+            model?: string;
+            temperature?: number;
+            maxTokens?: number;
+            finishReason?: string;
+            system?: string;
+            user?: string;
+          };
+        }>(r);
         if (data.error) setErroTexto(data.error);
         else {
           setOutputTexto(data.content ?? "");
@@ -243,7 +266,11 @@ export function CriarLayout({ icps, brandParams }: Props) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(imageBodyBase),
         });
-        const data = await r.json();
+        const data = await parseJsonResponse<{
+          error?: string;
+          imageUrl?: string;
+          promptDebug?: { final?: string };
+        }>(r);
         if (data.error) setErroImagem(data.error);
         else {
           setOutputImagem(data.imageUrl ?? "");

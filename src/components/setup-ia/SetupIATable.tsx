@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 type VehicleRuleRow = {
+  rowId: string;
   channel: string;
   format: string;
   output_schema: string;
@@ -14,15 +15,21 @@ type VehicleRuleRow = {
   prompt_guide: string;
 };
 
+type InitialVehicleRuleRow = Omit<VehicleRuleRow, "rowId">;
+
 interface Props {
   userId: string;
   userCode: string;
-  initialRows: VehicleRuleRow[];
+  initialRows: InitialVehicleRuleRow[];
 }
 
-function normalizeRows(rows: VehicleRuleRow[]): VehicleRuleRow[] {
+function normalizeRows(rows: Array<InitialVehicleRuleRow | VehicleRuleRow>): VehicleRuleRow[] {
   return [...rows]
-    .map((row) => ({
+    .map((row, index) => ({
+      rowId:
+        ("rowId" in row && typeof row.rowId === "string" && row.rowId.trim() !== "")
+          ? row.rowId
+          : `${row.channel ?? ""}::${row.format ?? ""}::${index}`,
       channel: row.channel ?? "",
       format: row.format ?? "",
       output_schema: row.output_schema ?? "",
@@ -55,13 +62,13 @@ export default function SetupIATable({ userId, userCode, initialRows }: Props) {
   const tableRows = useMemo(() => rows, [rows]);
 
   function updateCell(
-    rowKey: string,
+    rowId: string,
     field: keyof VehicleRuleRow,
     value: string
   ) {
     setRows((prev) =>
       prev.map((row) =>
-        `${row.channel}::${row.format}` === rowKey ? { ...row, [field]: value } : row
+        row.rowId === rowId ? { ...row, [field]: value } : row
       )
     );
   }
@@ -164,15 +171,14 @@ export default function SetupIATable({ userId, userCode, initialRows }: Props) {
               </thead>
               <tbody>
                 {tableRows.map((row) => {
-                  const rowKey = `${row.channel}::${row.format}`;
                   return (
-                  <tr key={`${row.channel}-${row.format}`} className="border-b border-stone-100 align-top odd:bg-white even:bg-stone-50/35 hover:bg-emerald-50/30">
+                  <tr key={row.rowId} className="border-b border-stone-100 align-top odd:bg-white even:bg-stone-50/35 hover:bg-emerald-50/30">
                     <td className="px-3 py-3 text-sm text-stone-700 whitespace-normal break-words">{row.channel}</td>
                     <td className="px-3 py-3 text-sm text-stone-700 whitespace-normal break-words">{row.format}</td>
                     <td className="px-3 py-3">
                       <textarea
                         value={row.output_schema}
-                        onChange={(e) => updateCell(rowKey, "output_schema", e.target.value)}
+                        onChange={(e) => updateCell(row.rowId, "output_schema", e.target.value)}
                         rows={2}
                         className="w-full text-sm leading-relaxed border border-stone-300 rounded-lg px-3 py-2 resize-y min-h-[72px] bg-white"
                       />
@@ -180,7 +186,7 @@ export default function SetupIATable({ userId, userCode, initialRows }: Props) {
                     <td className="px-3 py-3">
                       <textarea
                         value={row.copy_limit}
-                        onChange={(e) => updateCell(rowKey, "copy_limit", e.target.value)}
+                        onChange={(e) => updateCell(row.rowId, "copy_limit", e.target.value)}
                         rows={2}
                         className="w-full text-sm leading-relaxed border border-stone-300 rounded-lg px-3 py-2 resize-y min-h-[72px] bg-white"
                       />
@@ -188,7 +194,7 @@ export default function SetupIATable({ userId, userCode, initialRows }: Props) {
                     <td className="px-3 py-3">
                       <textarea
                         value={row.critical_preview}
-                        onChange={(e) => updateCell(rowKey, "critical_preview", e.target.value)}
+                        onChange={(e) => updateCell(row.rowId, "critical_preview", e.target.value)}
                         rows={2}
                         className="w-full text-sm leading-relaxed border border-stone-300 rounded-lg px-3 py-2 resize-y min-h-[72px] bg-white"
                       />
@@ -196,7 +202,7 @@ export default function SetupIATable({ userId, userCode, initialRows }: Props) {
                     <td className="px-3 py-3">
                       <textarea
                         value={row.hook}
-                        onChange={(e) => updateCell(rowKey, "hook", e.target.value)}
+                        onChange={(e) => updateCell(row.rowId, "hook", e.target.value)}
                         rows={2}
                         className="w-full text-sm leading-relaxed border border-stone-300 rounded-lg px-3 py-2 resize-y min-h-[72px] bg-white"
                       />
@@ -204,7 +210,7 @@ export default function SetupIATable({ userId, userCode, initialRows }: Props) {
                     <td className="px-3 py-3">
                       <textarea
                         value={row.intent}
-                        onChange={(e) => updateCell(rowKey, "intent", e.target.value)}
+                        onChange={(e) => updateCell(row.rowId, "intent", e.target.value)}
                         rows={2}
                         className="w-full text-sm leading-relaxed border border-stone-300 rounded-lg px-3 py-2 resize-y min-h-[72px] bg-white"
                       />
@@ -212,7 +218,7 @@ export default function SetupIATable({ userId, userCode, initialRows }: Props) {
                     <td className="px-3 py-3">
                       <textarea
                         value={row.prompt_guide}
-                        onChange={(e) => updateCell(rowKey, "prompt_guide", e.target.value)}
+                        onChange={(e) => updateCell(row.rowId, "prompt_guide", e.target.value)}
                         rows={5}
                         className="w-full text-sm leading-relaxed border border-stone-300 rounded-lg px-3 py-2 resize-y min-h-[130px] bg-white"
                       />
