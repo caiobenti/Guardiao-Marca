@@ -1,3 +1,9 @@
+import { SimuladorPersonaClient } from "@/components/simulador-persona/SimuladorPersonaClient";
+
 export default function SimuladorPersonaPage() {
-  return <div className="h-full bg-[#f9f9f7]" />;
+  return (
+    <div className="h-full">
+      <SimuladorPersonaClient />
+    </div>
+  );
 }
