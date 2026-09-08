@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { MoreVertical, Paperclip, Phone, Plus, Send, Smile, Type, Video } from "lucide-react";
-import { SDRS } from "../data";
+import { SDRS, Tendencia } from "../data";
 import { BotAvatar, DateDivider, SlackMessage } from "../ChatShell";
 import { Button, TrendArrow } from "../ui";
 import { usePerformBot } from "../context";
 import { STATUS_COLOR } from "../theme";
 
-function FarolTabela({ sdrId }: { sdrId: string }) {
-  if (sdrId === "felipe") {
+function FarolDot({ cor }: { cor: "verde" | "amarelo" | "vermelho" | "misto" }) {
+  if (cor === "misto") {
     return (
       <span
         className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
@@ -18,10 +18,80 @@ function FarolTabela({ sdrId }: { sdrId: string }) {
       />
     );
   }
-  const cor = SDRS.find((s) => s.id === sdrId)?.farol;
   const bg = cor === "vermelho" ? STATUS_COLOR.abaixo : cor === "amarelo" ? STATUS_COLOR.dentro : STATUS_COLOR.acima;
   return <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: bg }} />;
 }
+
+function FarolTabela({ sdrId }: { sdrId: string }) {
+  if (sdrId === "felipe") return <FarolDot cor="misto" />;
+  const cor = SDRS.find((s) => s.id === sdrId)?.farol ?? "verde";
+  return <FarolDot cor={cor} />;
+}
+
+interface LinhaQuinzena2 {
+  id: string;
+  nome: string;
+  cor: "verde" | "amarelo" | "vermelho" | "misto";
+  tendencia: Tendencia;
+  mixed?: boolean;
+  resumo: string;
+  acao: "nenhuma" | "concluido" | "marcar1a1";
+}
+
+const QUINZENA2: LinhaQuinzena2[] = [
+  {
+    id: "adriano",
+    nome: "Adriano",
+    cor: "verde",
+    tendencia: "estavel",
+    resumo: "Dentro do esperado. Já se passaram 5 semanas desde o último 1:1.",
+    acao: "marcar1a1",
+  },
+  {
+    id: "beatriz",
+    nome: "Beatriz",
+    cor: "verde",
+    tendencia: "subindo",
+    resumo:
+      "Segue como top performer. Também está apoiando o Carlos como buddy essa quinzena, sem impacto no próprio resultado até aqui.",
+    acao: "nenhuma",
+  },
+  {
+    id: "carlos",
+    nome: "Carlos",
+    cor: "amarelo",
+    tendencia: "subindo",
+    resumo:
+      "Em acompanhamento com a Beatriz (buddy). Quebra de objeção voltou à faixa esperada nas últimas ligações — sinal recente, seguimos observando.",
+    acao: "nenhuma",
+  },
+  {
+    id: "daniela",
+    nome: "Daniela",
+    cor: "verde",
+    tendencia: "estavel",
+    resumo: "1:1 realizado em 18/09. Segue dentro do esperado.",
+    acao: "concluido",
+  },
+  {
+    id: "eduarda",
+    nome: "Eduarda",
+    cor: "verde",
+    tendencia: "estavel",
+    resumo: "1:1 realizado em 22/09, conforme agendado.",
+    acao: "concluido",
+  },
+  {
+    id: "felipe",
+    nome: "Felipe",
+    cor: "misto",
+    tendencia: "subindo",
+    mixed: true,
+    resumo:
+      "Resultado segue bem acima da média, mas continua com duas competências de processo abaixo do esperado — o padrão de força bruta se mantém.",
+    acao: "nenhuma",
+  },
+];
 
 function ChannelHeader() {
   return (
@@ -78,6 +148,8 @@ export function ChatScreen({
   const [eduardaAgendada, setEduardaAgendada] = useState(false);
   const [checkInDecisao, setCheckInDecisao] = useState<"manter" | "encerrar" | null>(null);
   const [checkInRevelado, setCheckInRevelado] = useState(false);
+  const [quinzena2Revelada, setQuinzena2Revelada] = useState(false);
+  const [adrianoAgendado, setAdrianoAgendado] = useState(false);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -194,7 +266,7 @@ export function ChatScreen({
               {mostrarCheckIn && !checkInRevelado && (
                 <div className="border-t border-[#e2e0da] py-6">
                   <Button variant="secondary" onClick={() => setCheckInRevelado(true)}>
-                    Ver leitura da próxima quinzena
+                    Ver atualização do Carlos
                   </Button>
                 </div>
               )}
@@ -237,6 +309,101 @@ export function ChatScreen({
                       </div>
                     )}
                   </SlackMessage>
+
+                  {checkInDecisao && !quinzena2Revelada && (
+                    <div className="border-t border-[#e2e0da] py-6">
+                      <Button variant="secondary" onClick={() => setQuinzena2Revelada(true)}>
+                        Ver leitura quinzenal do time
+                      </Button>
+                    </div>
+                  )}
+
+                  {checkInDecisao && quinzena2Revelada && (
+                    <>
+                      <DateDivider label="6 de outubro" />
+
+                      <SlackMessage timestamp="09:05">
+                        <p className="mb-3 font-medium">
+                          Bom dia, Gabi. Aqui está sua leitura quinzenal do time.
+                        </p>
+
+                        <p className="mb-4 max-w-2xl leading-relaxed text-[#1a1a1a]">
+                          Pesquisa prévia do cliente recuperou depois da atualização da fonte de
+                          leads — sinal de que a causa estrutural foi corrigida. Felipe segue com
+                          resultado bem acima da média, mas mantém duas competências de processo
+                          abaixo do esperado.
+                        </p>
+
+                        <div className="mb-6">
+                          <Button onClick={onVerVisaoGeral}>Ver dashboard completo</Button>
+                        </div>
+
+                        <table className="w-full min-w-[720px] table-fixed border-t border-[#e2e0da] text-left text-sm">
+                          <colgroup>
+                            <col className="w-[13%]" />
+                            <col className="w-[10%]" />
+                            <col className="w-[10%]" />
+                            <col className="w-[45%]" />
+                            <col className="w-[22%]" />
+                          </colgroup>
+                          <thead className="text-xs text-[#6b6a63]">
+                            <tr className="border-b border-[#e2e0da]">
+                              <th className="px-0 py-2 pr-4 font-normal">SDR</th>
+                              <th className="px-3 py-2 font-normal">Status</th>
+                              <th className="px-3 py-2 font-normal">Tendência</th>
+                              <th className="px-4 py-2 font-normal">Resumo</th>
+                              <th className="px-4 py-2 font-normal">Ação</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[#e2e0da]">
+                            {QUINZENA2.map((sdr) => (
+                              <tr key={sdr.id} className="align-top">
+                                <td className="whitespace-nowrap py-3 pr-4 font-medium text-[#1a1a1a]">
+                                  {sdr.nome}
+                                </td>
+                                <td className="px-3 py-3">
+                                  <FarolDot cor={sdr.cor} />
+                                </td>
+                                <td className="px-3 py-3">
+                                  <TrendArrow tendencia={sdr.tendencia} mixed={sdr.mixed} />
+                                </td>
+                                <td className="px-4 py-3 text-[#1a1a1a]">{sdr.resumo}</td>
+                                <td className="px-4 py-3">
+                                  {sdr.acao === "concluido" && (
+                                    <span className="text-xs text-[#1a1a1a]">Sem ação</span>
+                                  )}
+                                  {sdr.acao === "marcar1a1" &&
+                                    (adrianoAgendado ? (
+                                      <span className="whitespace-nowrap font-mono text-xs text-[#1a1a1a]">
+                                        Agendado — 09/10
+                                      </span>
+                                    ) : (
+                                      <button
+                                        onClick={() => setAdrianoAgendado(true)}
+                                        className="whitespace-nowrap rounded-sm border border-[#1a1a1a] px-3 py-1 text-xs text-[#1a1a1a] transition-colors hover:bg-[#1a1a1a]/5"
+                                      >
+                                        Marcar 1:1
+                                      </button>
+                                    ))}
+                                  {sdr.acao === "nenhuma" && (
+                                    <span className="text-[#a8a69e]">—</span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+
+                        <p className="mt-3 text-xs text-[#6b6a63]">
+                          * Felipe: sinal misto — resultado em alta, mas processo com gaps.
+                        </p>
+
+                        <div className="mt-5">
+                          <Button onClick={onVerVisaoGeral}>Ver dashboard completo</Button>
+                        </div>
+                      </SlackMessage>
+                    </>
+                  )}
                 </>
               )}
             </>
