@@ -5,22 +5,27 @@ import { useState } from "react";
 import { Button } from "../ui";
 import { STATUS_COLOR } from "../theme";
 
-const LIGACOES: { data: string; tentativas: number; quebrou: boolean; nota?: string }[] = [
-  { data: "18/08", tentativas: 2, quebrou: false },
-  { data: "19/08", tentativas: 4, quebrou: false },
-  { data: "21/08", tentativas: 2, quebrou: true },
-  { data: "25/08", tentativas: 3, quebrou: false },
-  { data: "26/08", tentativas: 1, quebrou: false },
-  { data: "28/08", tentativas: 3, quebrou: false },
-  { data: "29/08", tentativas: 5, quebrou: false },
-  { data: "01/09", tentativas: 3, quebrou: true },
-  { data: "02/09", tentativas: 2, quebrou: false },
-  { data: "03/09", tentativas: 3, quebrou: true, nota: "objeção da secretária da escola" },
-];
+const TRANSCRICAO_NAO_QUEBROU = `Prospect: Não tenho interesse, já uso outra ferramenta.
 
-const REFERENCIA_TIME_QUEBRADAS = 7;
+Carlos: Entendo, mas nossa solução tem diferenciais bem
+interessantes, posso te mostrar rapidinho?
 
-const TRANSCRICAO = `Secretária: A diretora não costuma atender contato direto, ela pede
+Prospect: Não, obrigado, não é prioridade agora.
+
+Carlos: Sem problema, mas será que vale 5 minutinhos só pra eu te
+explicar os cases que temos com empresas parecidas com a sua?
+
+Prospect: Sinceramente, não tenho tempo agora.
+
+Carlos: Entendo. Posso te ligar de novo semana que vem então?
+
+Prospect: Pode ser, mas não prometo nada.
+
+(objeção não é quebrada — Carlos repete a mesma abordagem em todas
+as tentativas, sem investigar a causa real da recusa nem ajustar o
+discurso; a ligação termina sem próximo passo confirmado)`;
+
+const TRANSCRICAO_QUEBROU = `Secretária: A diretora não costuma atender contato direto, ela pede
 pra passar por e-mail.
 
 Carlos: Entendo, e prefiro respeitar isso mesmo. Só pra eu mandar
@@ -44,6 +49,39 @@ Carlos: Perfeito, pode marcar quinta às 9h. Muito obrigado!
 objeção real era agenda cheia, não falta de interesse, e oferecer
 um recorte de tempo menor ancorado num problema concreto da escola)`;
 
+const LIGACOES: {
+  data: string;
+  tentativas: number;
+  quebrou: boolean;
+  nota?: string;
+  transcricao?: string;
+}[] = [
+  { data: "18/08", tentativas: 2, quebrou: false },
+  {
+    data: "19/08",
+    tentativas: 4,
+    quebrou: false,
+    nota: "prospect sem interesse",
+    transcricao: TRANSCRICAO_NAO_QUEBROU,
+  },
+  { data: "21/08", tentativas: 2, quebrou: true },
+  { data: "25/08", tentativas: 3, quebrou: false },
+  { data: "26/08", tentativas: 1, quebrou: false },
+  { data: "28/08", tentativas: 3, quebrou: false },
+  { data: "29/08", tentativas: 5, quebrou: false },
+  { data: "01/09", tentativas: 3, quebrou: true },
+  { data: "02/09", tentativas: 2, quebrou: false },
+  {
+    data: "03/09",
+    tentativas: 3,
+    quebrou: true,
+    nota: "objeção da secretária da escola",
+    transcricao: TRANSCRICAO_QUEBROU,
+  },
+];
+
+const REFERENCIA_TIME_QUEBRADAS = 7;
+
 export function EvidenciaScreen({
   onVoltar,
   onAceitar,
@@ -53,10 +91,10 @@ export function EvidenciaScreen({
   onAceitar: () => void;
   onAjustar: () => void;
 }) {
-  const [transcricaoAberta, setTranscricaoAberta] = useState(false);
+  const [transcricaoAbertaData, setTranscricaoAbertaData] = useState<string | null>(null);
 
   const quebradas = LIGACOES.filter((l) => l.quebrou).length;
-  const ultima = LIGACOES[LIGACOES.length - 1];
+  const ligacaoAberta = LIGACOES.find((l) => l.data === transcricaoAbertaData);
 
   return (
     <div className="h-full overflow-y-auto">
@@ -98,39 +136,46 @@ export function EvidenciaScreen({
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e2e0da]">
-              {LIGACOES.map((l) => (
-                <tr key={l.data}>
-                  <td className="py-2 font-mono text-[#1a1a1a]">{l.data}</td>
-                  <td className="py-2 font-mono text-[#1a1a1a]">{l.tentativas}</td>
-                  <td className="py-2">
-                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[#1a1a1a]">
-                      <span
-                        className="h-2 w-2 shrink-0 rounded-full"
-                        style={{ background: l.quebrou ? STATUS_COLOR.acima : STATUS_COLOR.abaixo }}
-                      />
-                      {l.quebrou ? "Quebrou" : "Não quebrou"}
-                    </span>
-                  </td>
-                  <td className="py-2 text-right">
-                    <button
-                      onClick={l === ultima ? () => setTranscricaoAberta((v) => !v) : undefined}
-                      className="text-xs text-[#1a1a1a] underline underline-offset-2"
-                    >
-                      {l === ultima && transcricaoAberta
-                        ? "ocultar transcrição"
-                        : l.nota
-                        ? `ver transcrição — ${l.nota}`
-                        : "ver transcrição"}
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {LIGACOES.map((l) => {
+                const aberta = l.data === transcricaoAbertaData;
+                return (
+                  <tr key={l.data}>
+                    <td className="py-2 font-mono text-[#1a1a1a]">{l.data}</td>
+                    <td className="py-2 font-mono text-[#1a1a1a]">{l.tentativas}</td>
+                    <td className="py-2">
+                      <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[#1a1a1a]">
+                        <span
+                          className="h-2 w-2 shrink-0 rounded-full"
+                          style={{ background: l.quebrou ? STATUS_COLOR.acima : STATUS_COLOR.abaixo }}
+                        />
+                        {l.quebrou ? "Quebrou" : "Não quebrou"}
+                      </span>
+                    </td>
+                    <td className="py-2 text-right">
+                      <button
+                        onClick={
+                          l.transcricao
+                            ? () => setTranscricaoAbertaData(aberta ? null : l.data)
+                            : undefined
+                        }
+                        className="text-xs text-[#1a1a1a] underline underline-offset-2"
+                      >
+                        {aberta
+                          ? "ocultar transcrição"
+                          : l.nota
+                          ? `ver transcrição — ${l.nota}`
+                          : "ver transcrição"}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
 
-          {transcricaoAberta && (
+          {ligacaoAberta?.transcricao && (
             <pre className="mt-4 whitespace-pre-wrap border border-[#e2e0da] p-4 font-mono text-xs leading-relaxed text-[#1a1a1a]">
-              {TRANSCRICAO}
+              {ligacaoAberta.transcricao}
             </pre>
           )}
         </div>
