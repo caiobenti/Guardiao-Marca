@@ -5,18 +5,20 @@ import { useState } from "react";
 import { Button } from "../ui";
 import { STATUS_COLOR } from "../theme";
 
-const LIGACOES: { data: string; tentativa: number; nota?: string }[] = [
-  { data: "18/08", tentativa: 2 },
-  { data: "19/08", tentativa: 4 },
-  { data: "21/08", tentativa: 3 },
-  { data: "25/08", tentativa: 3 },
-  { data: "26/08", tentativa: 1 },
-  { data: "28/08", tentativa: 3 },
-  { data: "29/08", tentativa: 5 },
-  { data: "01/09", tentativa: 4 },
-  { data: "02/09", tentativa: 2 },
-  { data: "03/09", tentativa: 3, nota: "objeção da secretária da escola" },
+const LIGACOES: { data: string; tentativas: number; quebrou: boolean; nota?: string }[] = [
+  { data: "18/08", tentativas: 2, quebrou: false },
+  { data: "19/08", tentativas: 4, quebrou: false },
+  { data: "21/08", tentativas: 2, quebrou: true },
+  { data: "25/08", tentativas: 3, quebrou: false },
+  { data: "26/08", tentativas: 1, quebrou: false },
+  { data: "28/08", tentativas: 3, quebrou: false },
+  { data: "29/08", tentativas: 5, quebrou: false },
+  { data: "01/09", tentativas: 3, quebrou: true },
+  { data: "02/09", tentativas: 2, quebrou: false },
+  { data: "03/09", tentativas: 3, quebrou: true, nota: "objeção da secretária da escola" },
 ];
+
+const REFERENCIA_TIME_QUEBRADAS = 7;
 
 const TRANSCRICAO = `Secretária: A diretora não costuma atender contato direto, ela pede
 pra passar por e-mail.
@@ -53,7 +55,8 @@ export function EvidenciaScreen({
 }) {
   const [transcricaoAberta, setTranscricaoAberta] = useState(false);
 
-  const foraDaFaixa = LIGACOES.filter((l) => l.tentativa >= 3).length;
+  const quebradas = LIGACOES.filter((l) => l.quebrou).length;
+  const ultima = LIGACOES[LIGACOES.length - 1];
 
   return (
     <div className="h-full overflow-y-auto">
@@ -81,23 +84,44 @@ export function EvidenciaScreen({
 
         <div className="border-t border-[#e2e0da] pt-5">
           <p className="mb-3 text-sm text-[#1a1a1a]">
-            Últimas 10 reuniões — tentativa em que a objeção foi quebrada
+            Carlos só conseguiu quebrar a objeção em{" "}
+            <span className="font-mono">{quebradas}</span> das{" "}
+            <span className="font-mono">{LIGACOES.length}</span> últimas reuniões.
           </p>
           <table className="w-full text-left text-sm">
+            <thead className="text-xs text-[#6b6a63]">
+              <tr className="border-b border-[#e2e0da]">
+                <th className="w-24 py-2 font-normal">Data</th>
+                <th className="w-32 py-2 font-normal">Tentativas</th>
+                <th className="py-2 font-normal">Resultado</th>
+                <th className="py-2 font-normal"></th>
+              </tr>
+            </thead>
             <tbody className="divide-y divide-[#e2e0da]">
               {LIGACOES.map((l) => (
                 <tr key={l.data}>
-                  <td className="w-24 py-2 font-mono text-[#1a1a1a]">{l.data}</td>
-                  <td className="py-2 font-mono text-[#1a1a1a]">{l.tentativa}ª tentativa</td>
+                  <td className="py-2 font-mono text-[#1a1a1a]">{l.data}</td>
+                  <td className="py-2 font-mono text-[#1a1a1a]">{l.tentativas}</td>
+                  <td className="py-2">
+                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[#1a1a1a]">
+                      <span
+                        className="h-2 w-2 shrink-0 rounded-full"
+                        style={{ background: l.quebrou ? STATUS_COLOR.acima : STATUS_COLOR.abaixo }}
+                      />
+                      {l.quebrou ? "Quebrou" : "Não quebrou"}
+                    </span>
+                  </td>
                   <td className="py-2 text-right">
-                    {l.nota && (
-                      <button
-                        onClick={() => setTranscricaoAberta((v) => !v)}
-                        className="text-xs text-[#1a1a1a] underline underline-offset-2"
-                      >
-                        {transcricaoAberta ? "ocultar transcrição" : `ver transcrição — ${l.nota}`}
-                      </button>
-                    )}
+                    <button
+                      onClick={l === ultima ? () => setTranscricaoAberta((v) => !v) : undefined}
+                      className="text-xs text-[#1a1a1a] underline underline-offset-2"
+                    >
+                      {l === ultima && transcricaoAberta
+                        ? "ocultar transcrição"
+                        : l.nota
+                        ? `ver transcrição — ${l.nota}`
+                        : "ver transcrição"}
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -109,18 +133,14 @@ export function EvidenciaScreen({
               {TRANSCRICAO}
             </pre>
           )}
-
-          <p className="mt-4 text-sm text-[#1a1a1a]">
-            Em <span className="font-mono">{foraDaFaixa}</span> das{" "}
-            <span className="font-mono">10</span> reuniões, a objeção só foi quebrada a partir da
-            3ª tentativa.
-          </p>
         </div>
 
         <div className="border-t border-[#e2e0da] pt-5">
           <p className="text-sm text-[#1a1a1a]">
-            Carlos: <span className="font-mono">3ª</span> tentativa (mediana) · Referência do
-            time: <span className="font-mono">2ª</span> tentativa
+            Carlos: <span className="font-mono">{quebradas}</span> de{" "}
+            <span className="font-mono">{LIGACOES.length}</span> quebradas · Referência do time:{" "}
+            <span className="font-mono">{REFERENCIA_TIME_QUEBRADAS}</span> de{" "}
+            <span className="font-mono">{LIGACOES.length}</span> quebradas
           </p>
           <p className="mt-2 text-sm text-[#1a1a1a]">
             Carlos é o único fora da faixa nessa dimensão essa quinzena.
