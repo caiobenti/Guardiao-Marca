@@ -35,7 +35,7 @@ interface LinhaQuinzena2 {
   tendencia: Tendencia;
   mixed?: boolean;
   resumo: string;
-  acao: "nenhuma" | "concluido" | "marcar1a1";
+  acao: "nenhuma" | "concluido" | "marcar1a1" | "buddy" | "monitorar" | "revisar";
 }
 
 const QUINZENA2: LinhaQuinzena2[] = [
@@ -54,7 +54,7 @@ const QUINZENA2: LinhaQuinzena2[] = [
     tendencia: "subindo",
     resumo:
       "Segue como top performer. Também está apoiando o Carlos como buddy essa quinzena, sem impacto no próprio resultado até aqui.",
-    acao: "nenhuma",
+    acao: "monitorar",
   },
   {
     id: "carlos",
@@ -63,7 +63,7 @@ const QUINZENA2: LinhaQuinzena2[] = [
     tendencia: "subindo",
     resumo:
       "Em acompanhamento com a Beatriz (buddy). Quebra de objeção voltou à faixa esperada nas últimas ligações — sinal recente, seguimos observando.",
-    acao: "nenhuma",
+    acao: "buddy",
   },
   {
     id: "daniela",
@@ -89,7 +89,7 @@ const QUINZENA2: LinhaQuinzena2[] = [
     mixed: true,
     resumo:
       "Resultado segue bem acima da média, mas continua com duas competências de processo abaixo do esperado — o padrão de força bruta se mantém.",
-    acao: "nenhuma",
+    acao: "revisar",
   },
 ];
 
@@ -385,6 +385,21 @@ export function ChatScreen({
                                         Marcar 1:1
                                       </button>
                                     ))}
+                                  {sdr.acao === "buddy" && (
+                                    <span className="text-xs text-[#1a1a1a]">
+                                      Continuar com programa buddy
+                                    </span>
+                                  )}
+                                  {sdr.acao === "monitorar" && (
+                                    <span className="text-xs text-[#1a1a1a]">
+                                      Continuar acompanhando performance
+                                    </span>
+                                  )}
+                                  {sdr.acao === "revisar" && (
+                                    <button className="whitespace-nowrap rounded-sm border border-[#1a1a1a] px-3 py-1 text-xs text-[#1a1a1a] transition-colors hover:bg-[#1a1a1a]/5">
+                                      Revisar
+                                    </button>
+                                  )}
                                   {sdr.acao === "nenhuma" && (
                                     <span className="text-[#a8a69e]">—</span>
                                   )}
