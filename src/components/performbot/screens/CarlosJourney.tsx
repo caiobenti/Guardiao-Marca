@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChannelHeader, Composer, SlackMessage } from "../ChatShell";
 import { DimensaoGridAnonima } from "../DimensaoGridAnonima";
 import { EvidenciaLogTable, LIGACOES, REFERENCIA_TIME_QUEBRADAS, contarQuebradas } from "../EvidenciaLog";
@@ -71,32 +71,48 @@ function BlocoAcao({
 }
 
 export function CarlosJourney() {
+  const [mostrarE1, setMostrarE1] = useState(false);
   const [mostrarE2, setMostrarE2] = useState(false);
   const [mostrarE3, setMostrarE3] = useState(false);
   const [mostrarE4, setMostrarE4] = useState(false);
+  const [mostrarMensagemFinal, setMostrarMensagemFinal] = useState(false);
 
   const quebradas = contarQuebradas();
+
+  useEffect(() => {
+    const t = setTimeout(() => setMostrarE1(true), 1000);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (!mostrarE4) return;
+    const t = setTimeout(() => setMostrarMensagemFinal(true), 5000);
+    return () => clearTimeout(t);
+  }, [mostrarE4]);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       <ChannelHeader />
       <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
         <div className="mx-auto max-w-4xl">
-          <SlackMessage timestamp="09:02">
-            <p className="mb-4 max-w-2xl leading-relaxed text-[#1a1a1a]">
-              Oi, Carlos! Bom dia! Segue o seu termômetro da quinzena (lembrando: isso não é
-              uma avaliação, é uma ferramenta pra te ajudar a ver como você está chegando nas
-              suas ligações e identificar onde vale focar seu desenvolvimento, se você quiser).
-            </p>
+          {mostrarE1 && (
+            <SlackMessage timestamp="09:02">
+              <p className="mb-4 max-w-2xl leading-relaxed text-[#1a1a1a]">
+                Oi, Carlos! Bom dia! Segue o seu termômetro da quinzena (lembrando: isso não é
+                uma avaliação, é uma ferramenta pra te ajudar a ver como você está chegando nas
+                suas ligações e identificar onde vale focar seu desenvolvimento, se você
+                quiser).
+              </p>
 
-            <DimensaoGridAnonima />
+              <DimensaoGridAnonima />
 
-            <p className="mt-6 mb-4 max-w-2xl leading-relaxed text-[#1a1a1a]">
-              Reparei um padrão em Quebra de objeção que vale sua atenção. Dá uma olhada?
-            </p>
+              <p className="mt-6 mb-4 max-w-2xl leading-relaxed text-[#1a1a1a]">
+                Reparei um padrão em Quebra de objeção que vale sua atenção. Dá uma olhada?
+              </p>
 
-            {!mostrarE2 && <Button onClick={() => setMostrarE2(true)}>Ver detalhes</Button>}
-          </SlackMessage>
+              {!mostrarE2 && <Button onClick={() => setMostrarE2(true)}>Ver detalhes</Button>}
+            </SlackMessage>
+          )}
 
           {mostrarE2 && (
             <SlackMessage timestamp="09:03">
@@ -205,6 +221,14 @@ export function CarlosJourney() {
                 É o mesmo padrão que apareceu nas suas ligações de 21/08, 01/09 e 03/09 — só que
                 aqui elas fazem isso de forma consistente, ligação após ligação, não só às
                 vezes.
+              </p>
+            </SlackMessage>
+          )}
+
+          {mostrarMensagemFinal && (
+            <SlackMessage timestamp="09:06">
+              <p className="leading-relaxed text-[#1a1a1a]">
+                Daqui 15 dias eu volto com uma nova leitura pra gente acompanhar a evolução!
               </p>
             </SlackMessage>
           )}

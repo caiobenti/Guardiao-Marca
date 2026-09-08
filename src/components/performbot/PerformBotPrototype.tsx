@@ -91,15 +91,9 @@ function PerformBotApp() {
 
 export function PerformBotPrototype() {
   const [persona, setPersona] = useState<"escolher" | "gestor" | "colaborador">("escolher");
-  const [carregando, setCarregando] = useState<"gestor" | "colaborador" | null>(null);
-
-  function escolherPersona(escolha: "gestor" | "colaborador") {
-    setCarregando(escolha);
-    setTimeout(() => setPersona(escolha), 1000);
-  }
 
   if (persona === "escolher") {
-    return <PersonaSelector onEscolher={escolherPersona} carregando={carregando} />;
+    return <PersonaSelector onEscolher={setPersona} />;
   }
 
   if (persona === "colaborador") {

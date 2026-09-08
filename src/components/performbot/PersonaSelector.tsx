@@ -1,13 +1,9 @@
 "use client";
 
-type Persona = "gestor" | "colaborador";
-
 export function PersonaSelector({
   onEscolher,
-  carregando,
 }: {
-  onEscolher: (persona: Persona) => void;
-  carregando: Persona | null;
+  onEscolher: (persona: "gestor" | "colaborador") => void;
 }) {
   return (
     <div className="flex h-full min-h-screen items-center justify-center bg-[#fdfdfc] px-6">
@@ -24,20 +20,12 @@ export function PersonaSelector({
 
         <button
           onClick={() => onEscolher("gestor")}
-          disabled={carregando !== null}
-          className="block w-full border-t border-[#e2e0da] py-6 text-left transition-colors hover:bg-[#1a1a1a]/[0.02] disabled:pointer-events-none"
+          className="block w-full border-t border-[#e2e0da] py-6 text-left transition-colors hover:bg-[#1a1a1a]/[0.02]"
         >
-          <p className="flex items-center gap-2 text-lg text-[#1a1a1a]" style={{ fontFamily: "var(--font-serif-report)" }}>
+          <p className="text-lg text-[#1a1a1a]" style={{ fontFamily: "var(--font-serif-report)" }}>
             Jornada gestor
-            {carregando === "gestor" && (
-              <span className="font-sans text-xs text-[#6b6a63]">Carregando…</span>
-            )}
           </p>
-          <p
-            className={`mt-1 text-sm leading-relaxed text-[#6b6a63] transition-opacity ${
-              carregando === "gestor" ? "opacity-40" : ""
-            }`}
-          >
+          <p className="mt-1 text-sm leading-relaxed text-[#6b6a63]">
             A leitura quinzenal da Gabi sobre o time — sinal do time inteiro, decisões
             estruturais e individuais, evidência por trás de cada uma.
           </p>
@@ -45,20 +33,12 @@ export function PersonaSelector({
 
         <button
           onClick={() => onEscolher("colaborador")}
-          disabled={carregando !== null}
-          className="block w-full border-t border-b border-[#e2e0da] py-6 text-left transition-colors hover:bg-[#1a1a1a]/[0.02] disabled:pointer-events-none"
+          className="block w-full border-t border-b border-[#e2e0da] py-6 text-left transition-colors hover:bg-[#1a1a1a]/[0.02]"
         >
-          <p className="flex items-center gap-2 text-lg text-[#1a1a1a]" style={{ fontFamily: "var(--font-serif-report)" }}>
+          <p className="text-lg text-[#1a1a1a]" style={{ fontFamily: "var(--font-serif-report)" }}>
             Jornada colaborador
-            {carregando === "colaborador" && (
-              <span className="font-sans text-xs text-[#6b6a63]">Carregando…</span>
-            )}
           </p>
-          <p
-            className={`mt-1 text-sm leading-relaxed text-[#6b6a63] transition-opacity ${
-              carregando === "colaborador" ? "opacity-40" : ""
-            }`}
-          >
+          <p className="mt-1 text-sm leading-relaxed text-[#6b6a63]">
             A visão do Carlos sobre o próprio desempenho — comparação anônima com pares,
             evidência do próprio gap, e ações de desenvolvimento que ele mesmo escolhe.
           </p>

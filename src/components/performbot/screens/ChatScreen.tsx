@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SDRS, Tendencia } from "../data";
 import { ChannelHeader, Composer, DateDivider, SlackMessage } from "../ChatShell";
 import { MarcarReuniaoModal } from "../MarcarReuniaoModal";
@@ -101,12 +101,19 @@ export function ChatScreen({
   const [checkInDecisao, setCheckInDecisao] = useState<"manter" | "encerrar" | null>(null);
   const [checkInRevelado, setCheckInRevelado] = useState(false);
   const [quinzena2Revelada, setQuinzena2Revelada] = useState(false);
+  const [mensagemVisivel, setMensagemVisivel] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setMensagemVisivel(true), 1000);
+    return () => clearTimeout(t);
+  }, []);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       <ChannelHeader />
       <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
         <div className="mx-auto max-w-4xl">
+          {mensagemVisivel && (
           <SlackMessage timestamp="09:02">
             <p className="mb-3 font-medium">Bom dia, Gabi. Aqui está sua leitura quinzenal do time.</p>
 
@@ -212,6 +219,7 @@ export function ChatScreen({
               <Button onClick={onVerVisaoGeral}>Ver dashboard completo</Button>
             </div>
           </SlackMessage>
+          )}
 
           {conversationStage >= 1 && (
             <>
