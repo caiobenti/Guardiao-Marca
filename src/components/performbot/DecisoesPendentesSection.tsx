@@ -17,8 +17,11 @@ export function DecisoesPendentesSection({ onRevisarCarlos }: { onRevisarCarlos:
           variant="estrutural"
           title="Pesquisa prévia do cliente caiu para o time inteiro"
           description="Possível causa: fonte da lista de leads sem dado de contato. Sugestão: aguardar a próxima safra de leads (fonte já em correção) e reavaliar essa dimensão na próxima leitura, antes de agir individualmente com alguém do time."
-          actionLabel="Aceitar sugestão"
-          onAction={aceitarEstrutural}
+          actions={[
+            { label: "Aprovar plano de ação", onClick: aceitarEstrutural, variant: "primary" },
+            { label: "Propor novo plano de ação", variant: "secondary" },
+            { label: "Refutar o plano de ação", variant: "secondary" },
+          ]}
           status={estruturalStatus}
           resolvedText="Aceito. Vou avisar você se a dimensão não recuperar na próxima leitura."
         />
@@ -26,8 +29,7 @@ export function DecisoesPendentesSection({ onRevisarCarlos }: { onRevisarCarlos:
           variant="individual"
           title="Carlos — abaixo do esperado em quebra de objeção"
           description="Há 3 quinzenas seguidas. Plano sugerido, aguardando sua decisão."
-          actionLabel="Revisar"
-          onAction={onRevisarCarlos}
+          actions={[{ label: "Revisar", onClick: onRevisarCarlos, variant: "primary" }]}
           status={carlosStatus}
           resolvedText={carlosResolucaoTexto}
         />

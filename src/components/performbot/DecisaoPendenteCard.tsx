@@ -7,20 +7,24 @@ const VARIANT_STYLE: Record<Variant, { iconBg: string; iconColor: string; Icon: 
   individual: { iconBg: "bg-blue-100", iconColor: "text-blue-600", Icon: User },
 };
 
+export interface DecisaoAction {
+  label: string;
+  onClick?: () => void;
+  variant?: "primary" | "secondary";
+}
+
 export function DecisaoPendenteCard({
   variant,
   title,
   description,
-  actionLabel,
-  onAction,
+  actions,
   status,
   resolvedText,
 }: {
   variant: Variant;
   title: string;
   description: string;
-  actionLabel: string;
-  onAction: () => void;
+  actions: DecisaoAction[];
   status: "pendente" | "resolvido";
   resolvedText: string;
 }) {
@@ -44,12 +48,21 @@ export function DecisaoPendenteCard({
         {status === "pendente" ? (
           <>
             <p className="mt-0.5 text-sm leading-relaxed text-gray-600">{description}</p>
-            <button
-              onClick={onAction}
-              className="mt-2.5 rounded-lg border border-[#4f46e5] px-3.5 py-1.5 text-sm font-medium text-[#4f46e5] transition-colors hover:bg-[#eef0fd]"
-            >
-              {actionLabel}
-            </button>
+            <div className="mt-2.5 flex flex-wrap gap-2">
+              {actions.map((action) => (
+                <button
+                  key={action.label}
+                  onClick={action.onClick}
+                  className={
+                    action.variant === "secondary"
+                      ? "rounded-lg border border-gray-300 px-3.5 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50"
+                      : "rounded-lg bg-[#4f46e5] px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-[#4338ca]"
+                  }
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
           </>
         ) : (
           <p className="mt-0.5 text-sm leading-relaxed text-emerald-700">{resolvedText}</p>

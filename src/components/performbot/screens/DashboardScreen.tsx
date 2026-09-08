@@ -25,9 +25,9 @@ function yFor(value: number) {
 }
 
 const STATUS_STYLE: Record<"dentro" | "abaixo" | "acima", { bg: string; text: string }> = {
-  dentro: { bg: "bg-emerald-500", text: "dentro do esperado" },
+  dentro: { bg: "bg-amber-400", text: "dentro do esperado" },
   abaixo: { bg: "bg-red-500", text: "abaixo do esperado" },
-  acima: { bg: "bg-amber-400", text: "acima do esperado" },
+  acima: { bg: "bg-emerald-500", text: "acima do esperado" },
 };
 
 const JITTER = [0, -20, 20, -10, 10, -30];
@@ -58,7 +58,7 @@ function DimensionColumn({
   return (
     <div className="relative w-full rounded-lg bg-gray-50" style={{ height: TRACK_HEIGHT }}>
       <div
-        className="absolute left-0 right-0 border-y border-dashed border-gray-300 bg-emerald-50/70"
+        className="absolute left-0 right-0 border-y border-dashed border-gray-300 bg-amber-50/70"
         style={{ top: bandTop, height: bandBottom - bandTop }}
       />
       {pontos.map(({ sdr, valor, dx }) => {
@@ -140,30 +140,41 @@ export function DashboardScreen({
 
             <div className="mb-6 flex flex-wrap items-center gap-5 text-xs text-gray-500">
               <span className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> dentro do esperado
+                <span className="h-2.5 w-2.5 rounded-full bg-amber-400" /> dentro do esperado
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-amber-400" /> acima do esperado
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> acima do esperado
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="h-2.5 w-2.5 rounded-full bg-red-500" /> abaixo do esperado
               </span>
             </div>
 
-            <div className="grid grid-cols-5 gap-4 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              {DIMENSOES.map((d) => (
-                <div key={d.id} className="min-w-0">
-                  <p className="mb-3 truncate text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    {d.label}
-                  </p>
-                  <DimensionColumn
-                    dimensao={d.id}
-                    recorte={recorte}
-                    selectedId={selectedId}
-                    onSelect={(id) => setSelectedId(id === selectedId ? null : id)}
-                  />
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div className="mb-2 grid grid-cols-5 gap-4">
+                <div />
+                <div className="col-span-4 border-b-2 border-gray-200 pb-1.5 text-center text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+                  Competências · 4 dimensões
                 </div>
-              ))}
+              </div>
+              <div className="grid grid-cols-5 gap-4">
+                {DIMENSOES.map((d) => (
+                  <div key={d.id} className="min-w-0">
+                    <p className="truncate text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      {d.label}
+                    </p>
+                    <p className="mb-3 h-3.5 text-center text-[10px] text-gray-400">
+                      {d.id === "resultado" ? "(meta 10 reuniões/semana)" : ""}
+                    </p>
+                    <DimensionColumn
+                      dimensao={d.id}
+                      recorte={recorte}
+                      selectedId={selectedId}
+                      onSelect={(id) => setSelectedId(id === selectedId ? null : id)}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
