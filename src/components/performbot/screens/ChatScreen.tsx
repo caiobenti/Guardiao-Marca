@@ -196,7 +196,7 @@ export function ChatScreen({
                     </td>
                     <td className="px-4 py-3">
                       {sdr.id === "carlos" && (
-                        <span className="text-xs text-[#1a1a1a]">
+                        <span className="whitespace-nowrap rounded-sm border border-[#1a1a1a] px-3 py-1 text-xs text-[#1a1a1a]">
                           {carlosStatus === "resolvido" ? "Resolvido" : "Aguardando revisão"}
                         </span>
                       )}
