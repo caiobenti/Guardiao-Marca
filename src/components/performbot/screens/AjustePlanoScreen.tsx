@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Button } from "../ui";
 
 const TEXTO_PADRAO =
-  "Essa quinzena estou dedicada ao projeto X e não vou conseguir fazer o role-play 1:1. Vou colocar a Beatriz (top performer do time) como buddy do Carlos — pedir pra ela acompanhar algumas ligações e trocar dicas via Slack.";
+  "Quero testar uma nova abordagem de colocar um buddy (a Beatriz) para acompanhar ele. Não terei tempo livre essa semana para acompanhar o Carlos de perto.";
 
 type Motivo = "diagnostico" | "outra_acao";
 
