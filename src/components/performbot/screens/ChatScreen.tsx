@@ -320,8 +320,6 @@ export function ChatScreen({
 
                   {checkInDecisao && quinzena2Revelada && (
                     <>
-                      <DateDivider label="6 de outubro" />
-
                       <SlackMessage timestamp="09:05">
                         <p className="mb-3 font-medium">
                           Bom dia, Gabi. Aqui está sua leitura quinzenal do time.
