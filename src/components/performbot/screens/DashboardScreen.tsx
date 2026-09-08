@@ -1,37 +1,17 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
 import { useMemo, useState } from "react";
-import {
-  DIMENSOES,
-  Dimensao,
-  FAIXA_MAX,
-  FAIXA_MIN,
-  SDR,
-  SDRS,
-  statusValor,
-  valorAcumulado,
-} from "../data";
+import { VoltarHeader } from "../ChatShell";
+import { DIMENSOES, Dimensao, SDR, SDRS, statusValor, valorAcumulado } from "../data";
 import { DecisoesPendentesSection } from "../DecisoesPendentesSection";
 import { STATUS_COLOR } from "../theme";
-
-const SCALE_MIN = 45;
-const SCALE_MAX = 150;
-const TRACK_HEIGHT = 300;
-
-function yFor(value: number) {
-  const clamped = Math.min(SCALE_MAX, Math.max(SCALE_MIN, value));
-  const ratio = (clamped - SCALE_MIN) / (SCALE_MAX - SCALE_MIN);
-  return TRACK_HEIGHT - ratio * TRACK_HEIGHT;
-}
+import { BAND_BOTTOM, BAND_TOP, JITTER, TRACK_HEIGHT, yFor } from "../dimensaoScale";
 
 const STATUS_TEXT: Record<"dentro" | "abaixo" | "acima", string> = {
   dentro: "dentro do esperado",
   abaixo: "abaixo do esperado",
   acima: "acima do esperado",
 };
-
-const JITTER = [0, -20, 20, -10, 10, -30];
 
 function DimensionColumn({
   dimensao,
@@ -44,9 +24,6 @@ function DimensionColumn({
   selectedId: string | null;
   onSelect: (id: string) => void;
 }) {
-  const bandTop = yFor(FAIXA_MAX);
-  const bandBottom = yFor(FAIXA_MIN);
-
   const pontos = useMemo(() => {
     const ordenados = [...SDRS].sort((a, b) => a.valores[dimensao] - b.valores[dimensao]);
     return ordenados.map((sdr, i) => {
@@ -60,7 +37,7 @@ function DimensionColumn({
     <div className="relative w-full border border-[#e2e0da]" style={{ height: TRACK_HEIGHT }}>
       <div
         className="absolute left-0 right-0 border-y border-dashed border-[#c9c6bd]"
-        style={{ top: bandTop, height: bandBottom - bandTop }}
+        style={{ top: BAND_TOP, height: BAND_BOTTOM - BAND_TOP }}
       />
       {pontos.map(({ sdr, valor, dx }) => {
         const status = statusValor(valor);
@@ -97,15 +74,7 @@ export function DashboardScreen({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex items-center gap-3 border-b border-[#e2e0da] px-6 py-3.5">
-        <button
-          onClick={onVoltarMensagem}
-          className="flex items-center gap-1.5 text-sm text-[#6b6a63] hover:text-[#1a1a1a]"
-        >
-          <ArrowLeft size={16} strokeWidth={1.5} />
-          Voltar para a mensagem
-        </button>
-      </div>
+      <VoltarHeader label="Voltar para a mensagem" onVoltar={onVoltarMensagem} />
 
       <div className="flex h-full min-h-0">
         <div className="min-w-0 flex-1 overflow-y-auto px-6 py-6 sm:px-10">

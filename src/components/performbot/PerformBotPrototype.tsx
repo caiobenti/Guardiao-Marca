@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { SlackShell } from "./SlackShell";
+import { PersonaSelector } from "./PersonaSelector";
 import { PerformBotProvider, usePerformBot } from "./context";
 import { ChatScreen } from "./screens/ChatScreen";
 import { DashboardScreen } from "./screens/DashboardScreen";
 import { EvidenciaScreen } from "./screens/EvidenciaScreen";
 import { AjustePlanoScreen } from "./screens/AjustePlanoScreen";
+import { CarlosJourney } from "./screens/CarlosJourney";
 
 type Screen = "chat" | "dashboard" | "evidencia" | "ajuste";
 
@@ -88,6 +90,20 @@ function PerformBotApp() {
 }
 
 export function PerformBotPrototype() {
+  const [persona, setPersona] = useState<"escolher" | "gestor" | "colaborador">("escolher");
+
+  if (persona === "escolher") {
+    return <PersonaSelector onEscolher={setPersona} />;
+  }
+
+  if (persona === "colaborador") {
+    return (
+      <SlackShell>
+        <CarlosJourney />
+      </SlackShell>
+    );
+  }
+
   return (
     <PerformBotProvider>
       <PerformBotApp />

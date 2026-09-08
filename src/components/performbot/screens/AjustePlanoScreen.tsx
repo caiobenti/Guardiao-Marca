@@ -1,7 +1,7 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
+import { VoltarHeader } from "../ChatShell";
 import { Button } from "../ui";
 
 const TEXTO_PADRAO =
@@ -26,15 +26,7 @@ export function AjustePlanoScreen({
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="flex items-center gap-3 border-b border-[#e2e0da] px-6 py-3.5">
-        <button
-          onClick={onVoltar}
-          className="flex items-center gap-1.5 text-sm text-[#6b6a63] hover:text-[#1a1a1a]"
-        >
-          <ArrowLeft size={16} strokeWidth={1.5} />
-          Voltar
-        </button>
-      </div>
+      <VoltarHeader label="Voltar" onVoltar={onVoltar} />
       <div className="mx-auto max-w-2xl px-6 py-8 sm:px-10">
         <h1 className="mb-6 text-xl text-[#1a1a1a]" style={{ fontFamily: "var(--font-serif-report)" }}>
           O que você quer ajustar?

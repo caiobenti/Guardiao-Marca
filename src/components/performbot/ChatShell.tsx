@@ -1,4 +1,4 @@
-import { Bot } from "lucide-react";
+import { ArrowLeft, Bot, MoreVertical, Paperclip, Phone, Plus, Send, Smile, Type, Video } from "lucide-react";
 
 export function BotAvatar({ size = 36 }: { size?: number }) {
   return (
@@ -39,6 +39,60 @@ export function DateDivider({ label }: { label: string }) {
       <div className="h-px flex-1 bg-[#e2e0da]" />
       <span className="font-mono text-xs text-[#6b6a63]">{label}</span>
       <div className="h-px flex-1 bg-[#e2e0da]" />
+    </div>
+  );
+}
+
+export function ChannelHeader() {
+  return (
+    <div className="flex items-center justify-between border-b border-[#e2e0da] px-6 py-3.5">
+      <div className="flex items-center gap-3">
+        <BotAvatar size={34} />
+        <div>
+          <p className="flex items-center gap-2 text-[15px] font-semibold text-[#1a1a1a]">
+            PerformBot
+            <span className="border border-[#e2e0da] px-1 text-[10px] text-[#6b6a63]">APP</span>
+          </p>
+          <p className="text-xs text-[#6b6a63]">Assistente de performance do time de vendas</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-4 text-[#6b6a63]">
+        <Phone size={18} strokeWidth={1.5} />
+        <Video size={18} strokeWidth={1.5} />
+        <MoreVertical size={18} strokeWidth={1.5} />
+      </div>
+    </div>
+  );
+}
+
+export function Composer() {
+  return (
+    <div className="border-t border-[#e2e0da] px-6 py-4">
+      <div className="rounded-sm border border-[#e2e0da]">
+        <div className="px-4 pt-2.5 text-sm text-[#6b6a63]">Enviar uma mensagem para PerformBot...</div>
+        <div className="flex items-center gap-3 px-3 pb-2 pt-3 text-[#6b6a63]">
+          <Plus size={17} strokeWidth={1.5} />
+          <Type size={17} strokeWidth={1.5} />
+          <Smile size={17} strokeWidth={1.5} />
+          <Paperclip size={17} strokeWidth={1.5} />
+          <span className="flex-1" />
+          <Send size={17} strokeWidth={1.5} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function VoltarHeader({ label, onVoltar }: { label: string; onVoltar: () => void }) {
+  return (
+    <div className="flex items-center gap-3 border-b border-[#e2e0da] px-6 py-3.5">
+      <button
+        onClick={onVoltar}
+        className="flex items-center gap-1.5 text-sm text-[#6b6a63] hover:text-[#1a1a1a]"
+      >
+        <ArrowLeft size={16} strokeWidth={1.5} />
+        {label}
+      </button>
     </div>
   );
 }
