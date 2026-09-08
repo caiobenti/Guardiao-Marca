@@ -8,22 +8,12 @@ import { Button, TrendArrow } from "../ui";
 import { usePerformBot } from "../context";
 import { STATUS_COLOR } from "../theme";
 
-function FarolDot({ cor }: { cor: "verde" | "amarelo" | "vermelho" | "misto" }) {
-  if (cor === "misto") {
-    return (
-      <span
-        className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
-        style={{ background: `linear-gradient(135deg, ${STATUS_COLOR.acima} 50%, ${STATUS_COLOR.dentro} 50%)` }}
-        aria-label="status misto"
-      />
-    );
-  }
+function FarolDot({ cor }: { cor: "verde" | "amarelo" | "vermelho" }) {
   const bg = cor === "vermelho" ? STATUS_COLOR.abaixo : cor === "amarelo" ? STATUS_COLOR.dentro : STATUS_COLOR.acima;
   return <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: bg }} />;
 }
 
 function FarolTabela({ sdrId }: { sdrId: string }) {
-  if (sdrId === "felipe") return <FarolDot cor="misto" />;
   const cor = SDRS.find((s) => s.id === sdrId)?.farol ?? "verde";
   return <FarolDot cor={cor} />;
 }
@@ -31,7 +21,7 @@ function FarolTabela({ sdrId }: { sdrId: string }) {
 interface LinhaQuinzena2 {
   id: string;
   nome: string;
-  cor: "verde" | "amarelo" | "vermelho" | "misto";
+  cor: "verde" | "amarelo" | "vermelho";
   tendencia: Tendencia;
   mixed?: boolean;
   resumo: string;
@@ -84,7 +74,7 @@ const QUINZENA2: LinhaQuinzena2[] = [
   {
     id: "felipe",
     nome: "Felipe",
-    cor: "misto",
+    cor: "amarelo",
     tendencia: "subindo",
     mixed: true,
     resumo:
