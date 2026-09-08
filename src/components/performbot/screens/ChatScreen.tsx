@@ -218,9 +218,14 @@ export function ChatScreen({
                             Marcar 1:1
                           </button>
                         ))}
-                      {sdr.id !== "carlos" &&
-                        sdr.id !== "daniela" &&
-                        sdr.id !== "eduarda" && <span className="text-[#a8a69e]">—</span>}
+                      {(sdr.id === "adriano" || sdr.id === "beatriz") && (
+                        <span className="text-xs text-[#1a1a1a]">Nenhuma ação sugerida</span>
+                      )}
+                      {sdr.id === "felipe" && (
+                        <span className="text-xs text-[#1a1a1a]">
+                          Nenhuma ação a princípio, mas acompanhar evolução
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}

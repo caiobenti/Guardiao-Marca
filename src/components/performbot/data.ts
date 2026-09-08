@@ -40,7 +40,7 @@ export const SDRS: SDR[] = [
     inicial: "B",
     farol: "verde",
     tendencia: "subindo",
-    resumo: "Top performer, seguindo em alta. Nenhuma ação sugerida.",
+    resumo: "Top performer, seguindo em alta.",
     valores: { resultado: 128, cadencia: 118, pesquisa: 80, quebraObjecao: 122, rapport: 119 },
   },
   {
@@ -77,7 +77,7 @@ export const SDRS: SDR[] = [
     farol: "amarelo",
     tendencia: "subindo",
     resumo:
-      "Resultado bem acima da média, mas com sinais de força bruta: duas dimensões de processo abaixo do esperado. Vale um olhar, mesmo com o número tão bom.",
+      "Resultado bem acima da média, porém com duas dimensões de competência abaixo do esperado.",
     valores: { resultado: 141, cadencia: 71, pesquisa: 59, quebraObjecao: 100, rapport: 64 },
   },
 ];
