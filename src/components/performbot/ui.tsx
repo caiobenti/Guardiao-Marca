@@ -2,7 +2,7 @@ import type { Tendencia } from "./data";
 
 const TREND_ARROW: Record<Tendencia, string> = {
   subindo: "↑",
-  estavel: "–",
+  estavel: "→",
   caindo: "↓",
 };
 

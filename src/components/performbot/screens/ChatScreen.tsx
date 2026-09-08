@@ -4,6 +4,7 @@ import { useState } from "react";
 import { MoreVertical, Paperclip, Phone, Plus, Send, Smile, Type, Video } from "lucide-react";
 import { SDRS, Tendencia } from "../data";
 import { BotAvatar, DateDivider, SlackMessage } from "../ChatShell";
+import { MarcarReuniaoModal } from "../MarcarReuniaoModal";
 import { Button, TrendArrow } from "../ui";
 import { usePerformBot } from "../context";
 import { STATUS_COLOR } from "../theme";
@@ -135,11 +136,12 @@ export function ChatScreen({
   mostrarCheckIn: boolean;
 }) {
   const { carlosStatus, pendingCount } = usePerformBot();
-  const [eduardaAgendada, setEduardaAgendada] = useState(false);
+  const [eduardaData, setEduardaData] = useState<string | null>(null);
+  const [adrianoData, setAdrianoData] = useState<string | null>(null);
+  const [modalAberto, setModalAberto] = useState<"eduarda" | "adriano" | null>(null);
   const [checkInDecisao, setCheckInDecisao] = useState<"manter" | "encerrar" | null>(null);
   const [checkInRevelado, setCheckInRevelado] = useState(false);
   const [quinzena2Revelada, setQuinzena2Revelada] = useState(false);
-  const [adrianoAgendado, setAdrianoAgendado] = useState(false);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -206,13 +208,13 @@ export function ChatScreen({
                         </span>
                       )}
                       {sdr.id === "eduarda" &&
-                        (eduardaAgendada ? (
+                        (eduardaData ? (
                           <span className="whitespace-nowrap font-mono text-xs text-[#1a1a1a]">
-                            Agendado — 22/09
+                            Agendado — {eduardaData}
                           </span>
                         ) : (
                           <button
-                            onClick={() => setEduardaAgendada(true)}
+                            onClick={() => setModalAberto("eduarda")}
                             className="whitespace-nowrap rounded-sm border border-[#1a1a1a] px-3 py-1 text-xs text-[#1a1a1a] transition-colors hover:bg-[#1a1a1a]/5"
                           >
                             Marcar 1:1
@@ -366,13 +368,13 @@ export function ChatScreen({
                                     <span className="text-xs text-[#1a1a1a]">Sem ação</span>
                                   )}
                                   {sdr.acao === "marcar1a1" &&
-                                    (adrianoAgendado ? (
+                                    (adrianoData ? (
                                       <span className="whitespace-nowrap font-mono text-xs text-[#1a1a1a]">
-                                        Agendado — 09/10
+                                        Agendado — {adrianoData}
                                       </span>
                                     ) : (
                                       <button
-                                        onClick={() => setAdrianoAgendado(true)}
+                                        onClick={() => setModalAberto("adriano")}
                                         className="whitespace-nowrap rounded-sm border border-[#1a1a1a] px-3 py-1 text-xs text-[#1a1a1a] transition-colors hover:bg-[#1a1a1a]/5"
                                       >
                                         Marcar 1:1
@@ -419,6 +421,27 @@ export function ChatScreen({
         </div>
       </div>
       <Composer />
+
+      {modalAberto === "eduarda" && (
+        <MarcarReuniaoModal
+          nome="Eduarda"
+          onFechar={() => setModalAberto(null)}
+          onConfirmar={(data) => {
+            setEduardaData(data);
+            setModalAberto(null);
+          }}
+        />
+      )}
+      {modalAberto === "adriano" && (
+        <MarcarReuniaoModal
+          nome="Adriano"
+          onFechar={() => setModalAberto(null)}
+          onConfirmar={(data) => {
+            setAdrianoData(data);
+            setModalAberto(null);
+          }}
+        />
+      )}
     </div>
   );
 }
