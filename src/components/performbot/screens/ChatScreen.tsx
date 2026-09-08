@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { MoreVertical, Paperclip, Phone, Plus, Send, Smile, Type, Video } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { SDRS } from "../data";
 import { BotAvatar, DateDivider, SlackMessage } from "../ChatShell";
-import { DecisoesPendentesSection } from "../DecisoesPendentesSection";
 import { PillButton, TrendArrow } from "../ui";
 import { usePerformBot } from "../context";
 
@@ -66,19 +66,17 @@ function Composer() {
 }
 
 export function ChatScreen({
-  onRevisarCarlos,
   onVerVisaoGeral,
   conversationStage,
   mensagemCombinado,
   mostrarCheckIn,
 }: {
-  onRevisarCarlos: () => void;
   onVerVisaoGeral: () => void;
   conversationStage: 0 | 1;
   mensagemCombinado: string;
   mostrarCheckIn: boolean;
 }) {
-  const { carlosStatus } = usePerformBot();
+  const { carlosStatus, pendingCount } = usePerformBot();
   const [eduardaAgendada, setEduardaAgendada] = useState(false);
   const [checkInDecisao, setCheckInDecisao] = useState<"manter" | "encerrar" | null>(null);
 
@@ -88,10 +86,22 @@ export function ChatScreen({
       <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
         <div className="mx-auto max-w-4xl">
           <SlackMessage timestamp="09:02">
-            <p className="mb-4 font-medium">Bom dia, Gabi! Aqui está sua leitura quinzenal do time 👋</p>
+            <p className="mb-3 font-medium">Bom dia, Gabi! Aqui está sua leitura quinzenal do time 👋</p>
+
+            <p className="mb-4 max-w-2xl leading-relaxed text-gray-700">
+              Resultado geral do time dentro do esperado nessa quinzena, com Carlos abaixo em
+              quebra de objeção. Nas competências, pesquisa prévia do cliente caiu
+              estruturalmente para o time inteiro — sinal de causa comum, não de execução
+              individual.
+            </p>
 
             <div className="mb-5">
-              <DecisoesPendentesSection onRevisarCarlos={onRevisarCarlos} />
+              <button
+                onClick={onVerVisaoGeral}
+                className="rounded-lg bg-[#4f46e5] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4338ca]"
+              >
+                Ver dashboard completo
+              </button>
             </div>
 
             <div className="overflow-x-auto rounded-xl border border-gray-200">
@@ -131,8 +141,12 @@ export function ChatScreen({
                       </td>
                       <td className="px-4 py-3">
                         {sdr.id === "carlos" && (
-                          <span className="text-xs italic text-gray-400">
-                            {carlosStatus === "resolvido" ? "Resolvido" : "ver acima ↑"}
+                          <span
+                            className={`text-xs font-medium ${
+                              carlosStatus === "resolvido" ? "text-emerald-600" : "text-amber-600"
+                            }`}
+                          >
+                            {carlosStatus === "resolvido" ? "Resolvido" : "Aguardando revisão"}
                           </span>
                         )}
                         {sdr.id === "daniela" && (
@@ -167,12 +181,23 @@ export function ChatScreen({
               * Felipe: sinal misto — resultado em alta, mas processo com gaps.
             </p>
 
+            {pendingCount > 0 && (
+              <div className="mt-5 flex gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <AlertTriangle size={18} className="mt-0.5 shrink-0 text-amber-600" />
+                <p className="text-sm leading-relaxed text-amber-900">
+                  <span className="font-semibold">Lembrete:</span> você tem {pendingCount}{" "}
+                  {pendingCount === 1 ? "revisão pendente" : "revisões pendentes"}. Elas precisam
+                  ser avaliadas no dashboard antes de qualquer decisão.
+                </p>
+              </div>
+            )}
+
             <div className="mt-5">
               <button
                 onClick={onVerVisaoGeral}
                 className="rounded-lg bg-[#4f46e5] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4338ca]"
               >
-                Ver visão geral do time
+                Ver dashboard completo
               </button>
             </div>
           </SlackMessage>

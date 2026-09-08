@@ -61,7 +61,6 @@ function PerformBotApp() {
     <SlackShell>
       {screen === "chat" && (
         <ChatScreen
-          onRevisarCarlos={() => irParaEvidencia("chat")}
           onVerVisaoGeral={() => setScreen("dashboard")}
           conversationStage={conversationStage}
           mensagemCombinado={mensagemCombinado}
