@@ -77,6 +77,7 @@ export function ChatScreen({
   const { carlosStatus, pendingCount } = usePerformBot();
   const [eduardaAgendada, setEduardaAgendada] = useState(false);
   const [checkInDecisao, setCheckInDecisao] = useState<"manter" | "encerrar" | null>(null);
+  const [checkInRevelado, setCheckInRevelado] = useState(false);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -190,7 +191,15 @@ export function ChatScreen({
                 <p>{mensagemCombinado}</p>
               </SlackMessage>
 
-              {mostrarCheckIn && (
+              {mostrarCheckIn && !checkInRevelado && (
+                <div className="border-t border-[#e2e0da] py-6">
+                  <Button variant="secondary" onClick={() => setCheckInRevelado(true)}>
+                    Ver leitura da próxima quinzena
+                  </Button>
+                </div>
+              )}
+
+              {mostrarCheckIn && checkInRevelado && (
                 <>
                   <DateDivider label="22 de setembro" />
 

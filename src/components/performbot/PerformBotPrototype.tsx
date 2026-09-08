@@ -11,7 +11,7 @@ import { AjustePlanoScreen } from "./screens/AjustePlanoScreen";
 type Screen = "chat" | "dashboard" | "evidencia" | "ajuste";
 
 const MSG_BUDDY =
-  "Combinado. Vou acompanhar as interações entre Carlos e Beatriz essa quinzena e volto com uma leitura em 15 dias.";
+  "Ajuste registrado. Vou acompanhar as trocas entre Carlos e Beatriz ao longo da quinzena e ficar de olho em qualquer impacto do foco extra no Carlos sobre o resultado dela. Retorno com uma leitura em 15 dias.";
 const CARD_BUDDY = "Plano combinado: Beatriz como buddy do Carlos. Leitura em 15 dias.";
 
 const MSG_ROLEPLAY =
