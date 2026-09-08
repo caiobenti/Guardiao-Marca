@@ -1,48 +1,48 @@
-export function BotAvatar() {
+import { Bot } from "lucide-react";
+
+export function BotAvatar({ size = 36 }: { size?: number }) {
   return (
-    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#4338ca] text-lg text-white shadow-sm">
-      🤖
+    <div
+      className="flex shrink-0 items-center justify-center rounded-lg bg-[#4f46e5] text-white shadow-sm"
+      style={{ width: size, height: size }}
+    >
+      <Bot size={Math.round(size * 0.6)} />
     </div>
   );
 }
 
-export function BotMessage({
+export function SlackMessage({
+  timestamp,
   children,
-  caption,
 }: {
+  timestamp: string;
   children: React.ReactNode;
-  caption?: string;
 }) {
   return (
-    <div>
-      {caption && (
-        <p className="mb-2 ml-[52px] text-xs font-medium uppercase tracking-wide text-gray-400">
-          {caption}
+    <div className="flex items-start gap-3">
+      <BotAvatar />
+      <div className="min-w-0 flex-1">
+        <p className="mb-1 flex items-center gap-2 text-sm">
+          <span className="font-bold text-gray-900">PerformBot</span>
+          <span className="text-xs text-gray-400">{timestamp}</span>
+          <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500">
+            APP
+          </span>
         </p>
-      )}
-      <div className="flex items-start gap-3">
-        <BotAvatar />
-        <div className="min-w-0 flex-1">
-          <p className="mb-1.5 text-sm font-semibold text-gray-900">PerformBot</p>
-          <div className="rounded-2xl rounded-tl-sm border border-gray-200 bg-white px-5 py-4 text-[15px] leading-relaxed text-gray-800 shadow-sm">
-            {children}
-          </div>
-        </div>
+        <div className="text-[15px] leading-relaxed text-gray-800">{children}</div>
       </div>
     </div>
   );
 }
 
-export function ChatBackdrop({
-  children,
-  wide,
-}: {
-  children: React.ReactNode;
-  wide?: boolean;
-}) {
+export function DateDivider({ label }: { label: string }) {
   return (
-    <div className="h-full overflow-y-auto bg-[#eef0f4] px-6 py-8 sm:px-10">
-      <div className={`mx-auto ${wide ? "max-w-4xl" : "max-w-2xl"}`}>{children}</div>
+    <div className="my-6 flex items-center gap-3">
+      <div className="h-px flex-1 bg-gray-200" />
+      <span className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-500">
+        {label}
+      </span>
+      <div className="h-px flex-1 bg-gray-200" />
     </div>
   );
 }

@@ -1,20 +1,4 @@
-import type { Farol, Tendencia } from "./data";
-
-const FAROL_COLOR: Record<Farol, string> = {
-  verde: "#22c55e",
-  amarelo: "#eab308",
-  vermelho: "#ef4444",
-};
-
-export function FarolDot({ farol, size = 10 }: { farol: Farol; size?: number }) {
-  return (
-    <span
-      className="inline-block shrink-0 rounded-full"
-      style={{ width: size, height: size, backgroundColor: FAROL_COLOR[farol] }}
-      aria-label={`status ${farol}`}
-    />
-  );
-}
+import type { Tendencia } from "./data";
 
 const TREND_ARROW: Record<Tendencia, string> = {
   subindo: "↗",

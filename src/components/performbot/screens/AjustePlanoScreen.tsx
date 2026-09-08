@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { PillButton } from "../ui";
 
@@ -8,9 +9,11 @@ const TEXTO_PADRAO =
 
 type Motivo = "diagnostico" | "outra_acao";
 
-export function TelaB2({
+export function AjustePlanoScreen({
+  onVoltar,
   onConfirmar,
 }: {
+  onVoltar: () => void;
   onConfirmar: (texto: string, motivo: Motivo) => void;
 }) {
   const [motivo, setMotivo] = useState<Motivo>("outra_acao");
@@ -22,13 +25,22 @@ export function TelaB2({
   }
 
   return (
-    <div className="h-full overflow-y-auto px-6 py-8 sm:px-10">
-      <div className="mx-auto max-w-2xl">
+    <div className="h-full overflow-y-auto">
+      <div className="flex items-center gap-3 border-b border-gray-100 px-6 py-3.5">
+        <button
+          onClick={onVoltar}
+          className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-800"
+        >
+          <ArrowLeft size={16} />
+          Voltar
+        </button>
+      </div>
+      <div className="mx-auto max-w-2xl px-6 py-8 sm:px-10">
         <h1 className="mb-6 text-xl font-semibold text-gray-900">O que você quer ajustar?</h1>
 
         <div className="space-y-5 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
           <div className="space-y-3">
-            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 px-4 py-3 has-[:checked]:border-[#4338ca] has-[:checked]:bg-[#eef0fc]">
+            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 px-4 py-3 has-[:checked]:border-[#4f46e5] has-[:checked]:bg-[#eef0fc]">
               <input
                 type="radio"
                 name="motivo"
@@ -38,7 +50,7 @@ export function TelaB2({
               />
               <span className="text-sm text-gray-800">O diagnóstico não está certo</span>
             </label>
-            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 px-4 py-3 has-[:checked]:border-[#4338ca] has-[:checked]:bg-[#eef0fc]">
+            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 px-4 py-3 has-[:checked]:border-[#4f46e5] has-[:checked]:bg-[#eef0fc]">
               <input
                 type="radio"
                 name="motivo"
@@ -62,7 +74,7 @@ export function TelaB2({
                   : "Descreva a ação alternativa..."
               }
               rows={5}
-              className="w-full resize-none rounded-lg border border-gray-300 px-4 py-3 text-sm leading-relaxed text-gray-800 focus:border-[#4338ca] focus:outline-none focus:ring-1 focus:ring-[#4338ca]"
+              className="w-full resize-none rounded-lg border border-gray-300 px-4 py-3 text-sm leading-relaxed text-gray-800 focus:border-[#4f46e5] focus:outline-none focus:ring-1 focus:ring-[#4f46e5]"
             />
           </div>
 

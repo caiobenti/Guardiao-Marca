@@ -1,113 +1,97 @@
 "use client";
 
 import { useState } from "react";
-import { TelaA1 } from "./screens/TelaA1";
-import { TelaA2 } from "./screens/TelaA2";
-import { TelaB1 } from "./screens/TelaB1";
-import { TelaB2 } from "./screens/TelaB2";
-import { TelaB3 } from "./screens/TelaB3";
-import { TelaB4 } from "./screens/TelaB4";
+import { SlackShell } from "./SlackShell";
+import { PerformBotProvider, usePerformBot } from "./context";
+import { ChatScreen } from "./screens/ChatScreen";
+import { DashboardScreen } from "./screens/DashboardScreen";
+import { EvidenciaScreen } from "./screens/EvidenciaScreen";
+import { AjustePlanoScreen } from "./screens/AjustePlanoScreen";
 
-type Sequencia = "A" | "B";
-type TelaA = "A1" | "A2";
-type TelaB = "B1" | "B2" | "B3" | "B4";
-
-const MSG_ACEITE_ORIGINAL =
-  "Combinado! Vou acompanhar as sessões de role-play com você e volto com uma leitura em 15 dias.";
+type Screen = "chat" | "dashboard" | "evidencia" | "ajuste";
 
 const MSG_BUDDY =
   "Combinado. Vou acompanhar as interações entre Carlos e Beatriz essa quinzena e volto com uma leitura em 15 dias.";
+const CARD_BUDDY = "Plano combinado: Beatriz como buddy do Carlos. Leitura em 15 dias.";
+
+const MSG_ROLEPLAY =
+  "Combinado! Vou acompanhar as sessões de role-play com você e volto com uma leitura em 15 dias.";
+const CARD_ROLEPLAY = "Plano aceito: role-play 1:1 com você. Leitura em 15 dias.";
 
 const MSG_DIAGNOSTICO =
   "Entendido. Vou reavaliar o diagnóstico com base no que você trouxe e ajusto a leitura da próxima quinzena.";
+const CARD_DIAGNOSTICO = "Diagnóstico em reavaliação com base no seu retorno.";
 
-export function PerformBotPrototype() {
-  const [sequencia, setSequencia] = useState<Sequencia>("A");
-  const [telaA, setTelaA] = useState<TelaA>("A1");
-  const [telaB, setTelaB] = useState<TelaB>("B1");
-  const [mensagemB3, setMensagemB3] = useState(MSG_BUDDY);
-  const [mostrarContinuarB4, setMostrarContinuarB4] = useState(true);
+function PerformBotApp() {
+  const { resolverCarlos } = usePerformBot();
+  const [screen, setScreen] = useState<Screen>("chat");
+  const [previousScreen, setPreviousScreen] = useState<"chat" | "dashboard">("chat");
+  const [conversationStage, setConversationStage] = useState<0 | 1>(0);
+  const [mensagemCombinado, setMensagemCombinado] = useState(MSG_BUDDY);
+  const [mostrarCheckIn, setMostrarCheckIn] = useState(true);
 
-  function irParaSequenciaA() {
-    setSequencia("A");
-    setTelaA("A1");
+  function irParaEvidencia(origem: "chat" | "dashboard") {
+    setPreviousScreen(origem);
+    setScreen("evidencia");
   }
 
-  function irParaSequenciaB() {
-    setSequencia("B");
-    setTelaB("B1");
+  function aceitarPlanoOriginal() {
+    resolverCarlos(CARD_ROLEPLAY);
+    setMensagemCombinado(MSG_ROLEPLAY);
+    setMostrarCheckIn(false);
+    setConversationStage(1);
+    setScreen("chat");
   }
 
   function confirmarAjuste(_texto: string, motivo: "diagnostico" | "outra_acao") {
     if (motivo === "outra_acao") {
-      setMensagemB3(MSG_BUDDY);
-      setMostrarContinuarB4(true);
+      resolverCarlos(CARD_BUDDY);
+      setMensagemCombinado(MSG_BUDDY);
+      setMostrarCheckIn(true);
     } else {
-      setMensagemB3(MSG_DIAGNOSTICO);
-      setMostrarContinuarB4(false);
+      resolverCarlos(CARD_DIAGNOSTICO);
+      setMensagemCombinado(MSG_DIAGNOSTICO);
+      setMostrarCheckIn(false);
     }
-    setTelaB("B3");
-  }
-
-  function aceitarPlanoOriginal() {
-    setMensagemB3(MSG_ACEITE_ORIGINAL);
-    setMostrarContinuarB4(false);
-    setTelaB("B3");
+    setConversationStage(1);
+    setScreen("chat");
   }
 
   return (
-    <div className="flex h-full min-h-screen flex-col">
-      <div className="flex h-11 shrink-0 items-center justify-between border-b border-gray-800 bg-[#14161f] px-5 text-xs text-gray-300">
-        <span className="font-medium tracking-wide text-gray-400">
-          PerformBot · Protótipo navegável
-        </span>
-        <div className="flex gap-1.5">
-          <button
-            onClick={irParaSequenciaA}
-            className={`rounded-full px-3 py-1 font-medium transition-colors ${
-              sequencia === "A" ? "bg-white text-gray-900" : "text-gray-300 hover:bg-white/10"
-            }`}
-          >
-            Sequência A — Visão do time
-          </button>
-          <button
-            onClick={irParaSequenciaB}
-            className={`rounded-full px-3 py-1 font-medium transition-colors ${
-              sequencia === "B" ? "bg-white text-gray-900" : "text-gray-300 hover:bg-white/10"
-            }`}
-          >
-            Sequência B — Coaching do Carlos
-          </button>
-        </div>
-      </div>
+    <SlackShell>
+      {screen === "chat" && (
+        <ChatScreen
+          onRevisarCarlos={() => irParaEvidencia("chat")}
+          onVerVisaoGeral={() => setScreen("dashboard")}
+          conversationStage={conversationStage}
+          mensagemCombinado={mensagemCombinado}
+          mostrarCheckIn={mostrarCheckIn}
+        />
+      )}
+      {screen === "dashboard" && (
+        <DashboardScreen
+          onVoltarMensagem={() => setScreen("chat")}
+          onVerEvidenciaCarlos={() => irParaEvidencia("dashboard")}
+        />
+      )}
+      {screen === "evidencia" && (
+        <EvidenciaScreen
+          onVoltar={() => setScreen(previousScreen)}
+          onAceitar={aceitarPlanoOriginal}
+          onAjustar={() => setScreen("ajuste")}
+        />
+      )}
+      {screen === "ajuste" && (
+        <AjustePlanoScreen onVoltar={() => setScreen("evidencia")} onConfirmar={confirmarAjuste} />
+      )}
+    </SlackShell>
+  );
+}
 
-      <div className="min-h-0 flex-1">
-        {sequencia === "A" && telaA === "A1" && (
-          <TelaA1
-            onRevisarCarlos={irParaSequenciaB}
-            onVerVisaoGeral={() => setTelaA("A2")}
-          />
-        )}
-        {sequencia === "A" && telaA === "A2" && (
-          <TelaA2
-            onVoltarMensagem={() => setTelaA("A1")}
-            onVerEvidenciaCarlos={irParaSequenciaB}
-          />
-        )}
-
-        {sequencia === "B" && telaB === "B1" && (
-          <TelaB1 onAceitar={aceitarPlanoOriginal} onAjustar={() => setTelaB("B2")} />
-        )}
-        {sequencia === "B" && telaB === "B2" && <TelaB2 onConfirmar={confirmarAjuste} />}
-        {sequencia === "B" && telaB === "B3" && (
-          <TelaB3
-            mensagem={mensagemB3}
-            onContinuar={mostrarContinuarB4 ? () => setTelaB("B4") : undefined}
-            onReiniciar={irParaSequenciaB}
-          />
-        )}
-        {sequencia === "B" && telaB === "B4" && <TelaB4 onReiniciar={irParaSequenciaB} />}
-      </div>
-    </div>
+export function PerformBotPrototype() {
+  return (
+    <PerformBotProvider>
+      <PerformBotApp />
+    </PerformBotProvider>
   );
 }

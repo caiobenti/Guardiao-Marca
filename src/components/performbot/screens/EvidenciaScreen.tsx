@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { PillButton } from "../ui";
 
@@ -13,18 +14,29 @@ Carlos: Perfeito, mando hoje. Obrigado pelo tempo!
 (objeção só é quebrada na 4ª tentativa, 6 minutos depois, quando Carlos muda de
 abordagem e oferece um material em vez de insistir na ligação)`;
 
-export function TelaB1({
+export function EvidenciaScreen({
+  onVoltar,
   onAceitar,
   onAjustar,
 }: {
+  onVoltar: () => void;
   onAceitar: () => void;
   onAjustar: () => void;
 }) {
   const [transcricaoAberta, setTranscricaoAberta] = useState(false);
 
   return (
-    <div className="h-full overflow-y-auto px-6 py-8 sm:px-10">
-      <div className="mx-auto max-w-2xl">
+    <div className="h-full overflow-y-auto">
+      <div className="flex items-center gap-3 border-b border-gray-100 px-6 py-3.5">
+        <button
+          onClick={onVoltar}
+          className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-800"
+        >
+          <ArrowLeft size={16} />
+          Voltar
+        </button>
+      </div>
+      <div className="mx-auto max-w-2xl px-6 py-8 sm:px-10">
         <h1 className="mb-6 flex items-center gap-2 text-xl font-semibold text-gray-900">
           Carlos — Quebra de objeção
           <span className="text-red-500">🔴</span>
@@ -52,7 +64,7 @@ export function TelaB1({
           <div>
             <button
               onClick={() => setTranscricaoAberta((v) => !v)}
-              className="text-sm font-semibold text-[#4338ca] underline underline-offset-2 hover:text-[#372da3]"
+              className="text-sm font-semibold text-[#4f46e5] underline underline-offset-2 hover:text-[#4338ca]"
             >
               {transcricaoAberta ? "Ocultar" : "Ver"} transcrição da ligação de 03/09 (objeção da
               secretária da escola) {transcricaoAberta ? "↑" : "→"}
