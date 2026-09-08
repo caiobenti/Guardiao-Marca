@@ -13,6 +13,7 @@ import {
   valorAcumulado,
 } from "../data";
 import { DecisoesPendentesSection } from "../DecisoesPendentesSection";
+import { STATUS_COLOR } from "../theme";
 
 const SCALE_MIN = 45;
 const SCALE_MAX = 150;
@@ -24,10 +25,10 @@ function yFor(value: number) {
   return TRACK_HEIGHT - ratio * TRACK_HEIGHT;
 }
 
-const STATUS_STYLE: Record<"dentro" | "abaixo" | "acima", { bg: string; text: string }> = {
-  dentro: { bg: "bg-amber-400", text: "dentro do esperado" },
-  abaixo: { bg: "bg-red-500", text: "abaixo do esperado" },
-  acima: { bg: "bg-emerald-500", text: "acima do esperado" },
+const STATUS_TEXT: Record<"dentro" | "abaixo" | "acima", string> = {
+  dentro: "dentro do esperado",
+  abaixo: "abaixo do esperado",
+  acima: "acima do esperado",
 };
 
 const JITTER = [0, -20, 20, -10, 10, -30];
@@ -56,24 +57,23 @@ function DimensionColumn({
   }, [dimensao, recorte]);
 
   return (
-    <div className="relative w-full rounded-lg bg-gray-50" style={{ height: TRACK_HEIGHT }}>
+    <div className="relative w-full border border-[#e2e0da]" style={{ height: TRACK_HEIGHT }}>
       <div
-        className="absolute left-0 right-0 border-y border-dashed border-gray-300 bg-amber-50/70"
+        className="absolute left-0 right-0 border-y border-dashed border-[#c9c6bd]"
         style={{ top: bandTop, height: bandBottom - bandTop }}
       />
       {pontos.map(({ sdr, valor, dx }) => {
         const status = statusValor(valor);
-        const style = STATUS_STYLE[status];
         const isSelected = selectedId === sdr.id;
         return (
           <button
             key={sdr.id}
             onClick={() => onSelect(sdr.id)}
             title={`${sdr.nome}: ${valor}`}
-            className={`absolute flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-[11px] font-bold text-white shadow transition-all ${style.bg} ${
-              isSelected ? "z-10 ring-4 ring-[#4f46e5] ring-offset-1" : selectedId ? "opacity-30" : "opacity-100"
+            className={`absolute flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full font-mono text-[11px] font-medium text-white transition-opacity ${
+              isSelected ? "ring-2 ring-[#1a1a1a] ring-offset-1" : selectedId ? "opacity-30" : "opacity-100"
             }`}
-            style={{ top: yFor(valor), left: `calc(50% + ${dx}px)` }}
+            style={{ top: yFor(valor), left: `calc(50% + ${dx}px)`, background: STATUS_COLOR[status] }}
           >
             {sdr.inicial}
           </button>
@@ -97,12 +97,12 @@ export function DashboardScreen({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex items-center gap-3 border-b border-gray-100 px-6 py-3.5">
+      <div className="flex items-center gap-3 border-b border-[#e2e0da] px-6 py-3.5">
         <button
           onClick={onVoltarMensagem}
-          className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-800"
+          className="flex items-center gap-1.5 text-sm text-[#6b6a63] hover:text-[#1a1a1a]"
         >
-          <ArrowLeft size={16} />
+          <ArrowLeft size={16} strokeWidth={1.5} />
           Voltar para a mensagem
         </button>
       </div>
@@ -110,21 +110,24 @@ export function DashboardScreen({
       <div className="flex h-full min-h-0">
         <div className="min-w-0 flex-1 overflow-y-auto px-6 py-6 sm:px-10">
           <div className="mx-auto max-w-5xl">
-            <div className="mb-6 rounded-xl border border-gray-200 bg-gray-50/60 p-4">
+            <div className="mb-8 border-b border-[#e2e0da] pb-6">
               <DecisoesPendentesSection onRevisarCarlos={onVerEvidenciaCarlos} />
             </div>
 
             <div className="mb-1 flex flex-wrap items-center justify-between gap-4">
-              <h1 className="text-xl font-semibold text-gray-900">
+              <h1
+                className="text-xl text-[#1a1a1a]"
+                style={{ fontFamily: "var(--font-serif-report)" }}
+              >
                 Time da Gabi — visão por dimensão
               </h1>
-              <div className="inline-flex rounded-full border border-gray-300 bg-white p-1 text-sm">
+              <div className="flex text-sm">
                 {(["quinzena", "acumulado"] as const).map((opt) => (
                   <button
                     key={opt}
                     onClick={() => setRecorte(opt)}
-                    className={`rounded-full px-3.5 py-1.5 font-medium transition-colors ${
-                      recorte === opt ? "bg-[#4f46e5] text-white" : "text-gray-600 hover:bg-gray-50"
+                    className={`border border-[#1a1a1a] px-3.5 py-1.5 -ml-px first:ml-0 ${
+                      recorte === opt ? "bg-[#1a1a1a] text-[#fdfdfc]" : "text-[#1a1a1a] hover:bg-[#1a1a1a]/5"
                     }`}
                   >
                     {opt === "quinzena" ? "Quinzena atual" : "Acumulado do ciclo"}
@@ -133,37 +136,47 @@ export function DashboardScreen({
               </div>
             </div>
 
-            <p className="mb-6 text-sm text-gray-500">
+            <p className="mb-6 text-sm text-[#6b6a63]">
               Índice onde 100 = exatamente o esperado. Faixa sombreada = dentro do esperado
               (85–115).
             </p>
 
-            <div className="mb-6 flex flex-wrap items-center gap-5 text-xs text-gray-500">
+            <div className="mb-6 flex flex-wrap items-center gap-5 text-xs text-[#6b6a63]">
               <span className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-amber-400" /> dentro do esperado
+                <span
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{ background: STATUS_COLOR.dentro }}
+                />{" "}
+                dentro do esperado
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> acima do esperado
+                <span
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{ background: STATUS_COLOR.acima }}
+                />{" "}
+                acima do esperado
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-red-500" /> abaixo do esperado
+                <span
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{ background: STATUS_COLOR.abaixo }}
+                />{" "}
+                abaixo do esperado
               </span>
             </div>
 
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div>
               <div className="mb-2 grid grid-cols-5 gap-4">
                 <div />
-                <div className="col-span-4 border-b-2 border-gray-200 pb-1.5 text-center text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+                <div className="col-span-4 border-b border-[#e2e0da] pb-1.5 text-center text-xs text-[#6b6a63]">
                   Competências · 4 dimensões
                 </div>
               </div>
               <div className="grid grid-cols-5 gap-4">
                 {DIMENSOES.map((d) => (
                   <div key={d.id} className="min-w-0">
-                    <p className="truncate text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
-                      {d.label}
-                    </p>
-                    <p className="mb-3 h-3.5 text-center text-[10px] text-gray-400">
+                    <p className="truncate text-center text-xs text-[#1a1a1a]">{d.label}</p>
+                    <p className="mb-3 h-3.5 text-center font-mono text-[10px] text-[#6b6a63]">
                       {d.id === "resultado" ? "(meta 10 reuniões/semana)" : ""}
                     </p>
                     <DimensionColumn
@@ -180,45 +193,48 @@ export function DashboardScreen({
         </div>
 
         {selected && (
-          <aside className="w-80 shrink-0 overflow-y-auto border-l border-gray-200 bg-white px-6 py-8">
+          <aside className="w-80 shrink-0 overflow-y-auto border-l border-[#e2e0da] px-6 py-8">
             <div className="mb-5 flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
-                  SDR selecionado
-                </p>
-                <h2 className="text-lg font-semibold text-gray-900">{selected.nome}</h2>
+                <p className="text-xs text-[#6b6a63]">SDR selecionado</p>
+                <h2 className="text-lg text-[#1a1a1a]" style={{ fontFamily: "var(--font-serif-report)" }}>
+                  {selected.nome}
+                </h2>
               </div>
               <button
                 onClick={() => setSelectedId(null)}
-                className="text-gray-400 hover:text-gray-700"
+                className="text-[#6b6a63] hover:text-[#1a1a1a]"
                 aria-label="Fechar painel"
               >
                 ✕
               </button>
             </div>
 
-            <ul className="space-y-2.5">
+            <ul>
               {DIMENSOES.map((d) => {
                 const raw = selected.valores[d.id];
                 const valor = recorte === "quinzena" ? raw : valorAcumulado(raw);
                 const status = statusValor(valor);
-                const style = STATUS_STYLE[status];
                 const mostrarEvidencia = selected.id === "carlos" && d.id === "quebraObjecao";
                 return (
-                  <li key={d.id} className="rounded-lg border border-gray-100 bg-gray-50/60 px-3 py-2.5">
+                  <li key={d.id} className="border-t border-[#e2e0da] py-2.5 first:border-t-0">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-medium text-gray-800">{d.label}</span>
-                      <span className={`h-2 w-2 shrink-0 rounded-full ${style.bg}`} title={style.text} />
+                      <span className="text-sm text-[#1a1a1a]">{d.label}</span>
+                      <span
+                        className="h-2 w-2 shrink-0 rounded-full"
+                        style={{ background: STATUS_COLOR[status] }}
+                        title={STATUS_TEXT[status]}
+                      />
                     </div>
-                    <p className="mt-0.5 text-xs text-gray-500">
-                      Índice {valor} · {style.text}
+                    <p className="mt-0.5 text-xs text-[#6b6a63]">
+                      Índice <span className="font-mono">{valor}</span> · {STATUS_TEXT[status]}
                     </p>
                     {mostrarEvidencia && (
                       <button
                         onClick={onVerEvidenciaCarlos}
-                        className="mt-2 text-xs font-semibold text-[#4f46e5] underline underline-offset-2 hover:text-[#4338ca]"
+                        className="mt-2 text-xs text-[#1a1a1a] underline underline-offset-2"
                       >
-                        Ver evidência →
+                        Ver evidência
                       </button>
                     )}
                   </li>

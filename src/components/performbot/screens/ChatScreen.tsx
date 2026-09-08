@@ -2,46 +2,44 @@
 
 import { useState } from "react";
 import { MoreVertical, Paperclip, Phone, Plus, Send, Smile, Type, Video } from "lucide-react";
-import { AlertTriangle } from "lucide-react";
 import { SDRS } from "../data";
 import { BotAvatar, DateDivider, SlackMessage } from "../ChatShell";
-import { PillButton, TrendArrow } from "../ui";
+import { Button, TrendArrow } from "../ui";
 import { usePerformBot } from "../context";
+import { STATUS_COLOR } from "../theme";
 
 function FarolTabela({ sdrId }: { sdrId: string }) {
   if (sdrId === "felipe") {
     return (
       <span
         className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
-        style={{ background: "linear-gradient(135deg, #22c55e 50%, #eab308 50%)" }}
+        style={{ background: `linear-gradient(135deg, ${STATUS_COLOR.acima} 50%, ${STATUS_COLOR.dentro} 50%)` }}
         aria-label="status misto"
       />
     );
   }
   const cor = SDRS.find((s) => s.id === sdrId)?.farol;
-  const bg = cor === "vermelho" ? "#ef4444" : cor === "amarelo" ? "#eab308" : "#22c55e";
+  const bg = cor === "vermelho" ? STATUS_COLOR.abaixo : cor === "amarelo" ? STATUS_COLOR.dentro : STATUS_COLOR.acima;
   return <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: bg }} />;
 }
 
 function ChannelHeader() {
   return (
-    <div className="flex items-center justify-between border-b border-gray-100 px-6 py-3.5">
+    <div className="flex items-center justify-between border-b border-[#e2e0da] px-6 py-3.5">
       <div className="flex items-center gap-3">
         <BotAvatar size={34} />
         <div>
-          <p className="flex items-center gap-2 text-[15px] font-bold text-gray-900">
+          <p className="flex items-center gap-2 text-[15px] font-semibold text-[#1a1a1a]">
             PerformBot
-            <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500">
-              APP
-            </span>
+            <span className="border border-[#e2e0da] px-1 text-[10px] text-[#6b6a63]">APP</span>
           </p>
-          <p className="text-xs text-gray-500">Assistente de performance do time de vendas</p>
+          <p className="text-xs text-[#6b6a63]">Assistente de performance do time de vendas</p>
         </div>
       </div>
-      <div className="flex items-center gap-4 text-gray-400">
-        <Phone size={18} />
-        <Video size={18} />
-        <MoreVertical size={18} />
+      <div className="flex items-center gap-4 text-[#6b6a63]">
+        <Phone size={18} strokeWidth={1.5} />
+        <Video size={18} strokeWidth={1.5} />
+        <MoreVertical size={18} strokeWidth={1.5} />
       </div>
     </div>
   );
@@ -49,16 +47,16 @@ function ChannelHeader() {
 
 function Composer() {
   return (
-    <div className="border-t border-gray-100 px-6 py-4">
-      <div className="rounded-xl border border-gray-300">
-        <div className="px-4 pt-2.5 text-sm text-gray-400">Enviar uma mensagem para PerformBot...</div>
-        <div className="flex items-center gap-3 px-3 pb-2 pt-3 text-gray-400">
-          <Plus size={17} />
-          <Type size={17} />
-          <Smile size={17} />
-          <Paperclip size={17} />
+    <div className="border-t border-[#e2e0da] px-6 py-4">
+      <div className="rounded-sm border border-[#e2e0da]">
+        <div className="px-4 pt-2.5 text-sm text-[#6b6a63]">Enviar uma mensagem para PerformBot...</div>
+        <div className="flex items-center gap-3 px-3 pb-2 pt-3 text-[#6b6a63]">
+          <Plus size={17} strokeWidth={1.5} />
+          <Type size={17} strokeWidth={1.5} />
+          <Smile size={17} strokeWidth={1.5} />
+          <Paperclip size={17} strokeWidth={1.5} />
           <span className="flex-1" />
-          <Send size={17} />
+          <Send size={17} strokeWidth={1.5} />
         </div>
       </div>
     </div>
@@ -86,106 +84,95 @@ export function ChatScreen({
       <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
         <div className="mx-auto max-w-4xl">
           <SlackMessage timestamp="09:02">
-            <p className="mb-3 font-medium">Bom dia, Gabi! Aqui está sua leitura quinzenal do time 👋</p>
+            <p className="mb-3 font-medium">Bom dia, Gabi. Aqui está sua leitura quinzenal do time.</p>
 
-            <p className="mb-4 max-w-2xl leading-relaxed text-gray-700">
+            <p className="mb-4 max-w-2xl leading-relaxed text-[#1a1a1a]">
               Resultado geral do time dentro do esperado nessa quinzena, com Carlos abaixo em
               quebra de objeção. Nas competências, pesquisa prévia do cliente caiu
               estruturalmente para o time inteiro — sinal de causa comum, não de execução
               individual.
             </p>
 
-            <div className="mb-5">
-              <button
-                onClick={onVerVisaoGeral}
-                className="rounded-lg bg-[#4f46e5] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4338ca]"
-              >
-                Ver dashboard completo
-              </button>
+            <div className="mb-6">
+              <Button onClick={onVerVisaoGeral}>Ver dashboard completo</Button>
             </div>
 
-            <div className="overflow-x-auto rounded-xl border border-gray-200">
-              <table className="w-full min-w-[720px] table-fixed text-left text-sm">
-                <colgroup>
-                  <col className="w-[13%]" />
-                  <col className="w-[10%]" />
-                  <col className="w-[10%]" />
-                  <col className="w-[45%]" />
-                  <col className="w-[22%]" />
-                </colgroup>
-                <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
-                  <tr>
-                    <th className="px-4 py-2.5 font-medium">SDR</th>
-                    <th className="px-3 py-2.5 font-medium">Status</th>
-                    <th className="px-3 py-2.5 font-medium">Tendência</th>
-                    <th className="px-4 py-2.5 font-medium">Resumo</th>
-                    <th className="px-4 py-2.5 font-medium">Ação</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {SDRS.map((sdr) => (
-                    <tr key={sdr.id} className="align-top">
-                      <td className="whitespace-nowrap px-4 py-3 font-medium text-gray-900">
-                        {sdr.nome}
-                      </td>
-                      <td className="px-3 py-3">
-                        <FarolTabela sdrId={sdr.id} />
-                      </td>
-                      <td className="px-3 py-3">
-                        <TrendArrow tendencia={sdr.tendencia} mixed={sdr.id === "felipe"} />
-                      </td>
-                      <td className="px-4 py-3 text-gray-700">
-                        {sdr.id === "carlos"
-                          ? "Abaixo do esperado em quebra de objeção, há 3 quinzenas seguidas."
-                          : sdr.resumo}
-                      </td>
-                      <td className="px-4 py-3">
-                        {sdr.id === "carlos" && (
-                          <span
-                            className={`text-xs font-medium ${
-                              carlosStatus === "resolvido" ? "text-emerald-600" : "text-amber-600"
-                            }`}
+            <table className="w-full min-w-[720px] table-fixed border-t border-[#e2e0da] text-left text-sm">
+              <colgroup>
+                <col className="w-[13%]" />
+                <col className="w-[10%]" />
+                <col className="w-[10%]" />
+                <col className="w-[45%]" />
+                <col className="w-[22%]" />
+              </colgroup>
+              <thead className="text-xs text-[#6b6a63]">
+                <tr className="border-b border-[#e2e0da]">
+                  <th className="px-0 py-2 pr-4 font-normal">SDR</th>
+                  <th className="px-3 py-2 font-normal">Status</th>
+                  <th className="px-3 py-2 font-normal">Tendência</th>
+                  <th className="px-4 py-2 font-normal">Resumo</th>
+                  <th className="px-4 py-2 font-normal">Ação</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#e2e0da]">
+                {SDRS.map((sdr) => (
+                  <tr key={sdr.id} className="align-top">
+                    <td className="whitespace-nowrap py-3 pr-4 font-medium text-[#1a1a1a]">
+                      {sdr.nome}
+                    </td>
+                    <td className="px-3 py-3">
+                      <FarolTabela sdrId={sdr.id} />
+                    </td>
+                    <td className="px-3 py-3">
+                      <TrendArrow tendencia={sdr.tendencia} mixed={sdr.id === "felipe"} />
+                    </td>
+                    <td className="px-4 py-3 text-[#1a1a1a]">
+                      {sdr.id === "carlos"
+                        ? "Abaixo do esperado em quebra de objeção, há 3 quinzenas seguidas."
+                        : sdr.resumo}
+                    </td>
+                    <td className="px-4 py-3">
+                      {sdr.id === "carlos" && (
+                        <span className="text-xs text-[#1a1a1a]">
+                          {carlosStatus === "resolvido" ? "Resolvido" : "Aguardando revisão"}
+                        </span>
+                      )}
+                      {sdr.id === "daniela" && (
+                        <span className="whitespace-nowrap border border-[#e2e0da] px-2 py-1 font-mono text-xs text-[#1a1a1a]">
+                          18/09
+                        </span>
+                      )}
+                      {sdr.id === "eduarda" &&
+                        (eduardaAgendada ? (
+                          <span className="whitespace-nowrap font-mono text-xs text-[#1a1a1a]">
+                            Agendado — 22/09
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => setEduardaAgendada(true)}
+                            className="whitespace-nowrap rounded-sm border border-[#1a1a1a] px-3 py-1 text-xs text-[#1a1a1a] transition-colors hover:bg-[#1a1a1a]/5"
                           >
-                            {carlosStatus === "resolvido" ? "Resolvido" : "Aguardando revisão"}
-                          </span>
-                        )}
-                        {sdr.id === "daniela" && (
-                          <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-lg border border-[#4f46e5] px-3 py-1 text-xs font-medium text-[#4f46e5]">
-                            📅 18/09
-                          </span>
-                        )}
-                        {sdr.id === "eduarda" &&
-                          (eduardaAgendada ? (
-                            <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-lg bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
-                              ✓ Agendado — 22/09
-                            </span>
-                          ) : (
-                            <button
-                              onClick={() => setEduardaAgendada(true)}
-                              className="rounded-lg border border-[#4f46e5] px-3.5 py-1.5 text-xs font-medium text-[#4f46e5] transition-colors hover:bg-[#eef0fd]"
-                            >
-                              Marcar 1:1
-                            </button>
-                          ))}
-                        {sdr.id !== "carlos" &&
-                          sdr.id !== "daniela" &&
-                          sdr.id !== "eduarda" && <span className="text-gray-300">—</span>}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                            Marcar 1:1
+                          </button>
+                        ))}
+                      {sdr.id !== "carlos" &&
+                        sdr.id !== "daniela" &&
+                        sdr.id !== "eduarda" && <span className="text-[#a8a69e]">—</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
 
-            <p className="mt-3 text-xs text-gray-400">
+            <p className="mt-3 text-xs text-[#6b6a63]">
               * Felipe: sinal misto — resultado em alta, mas processo com gaps.
             </p>
 
             {pendingCount > 0 && (
-              <div className="mt-5 flex gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                <AlertTriangle size={18} className="mt-0.5 shrink-0 text-amber-600" />
-                <p className="text-sm leading-relaxed text-amber-900">
-                  <span className="font-semibold">Lembrete:</span> você tem {pendingCount}{" "}
+              <div className="mt-6 border-t border-[#e2e0da] pt-4">
+                <p className="text-sm leading-relaxed text-[#1a1a1a]">
+                  Lembrete: você tem{" "}
+                  <span className="font-mono">{pendingCount}</span>{" "}
                   {pendingCount === 1 ? "revisão pendente" : "revisões pendentes"}. Elas precisam
                   ser avaliadas no dashboard antes de qualquer decisão.
                 </p>
@@ -193,12 +180,7 @@ export function ChatScreen({
             )}
 
             <div className="mt-5">
-              <button
-                onClick={onVerVisaoGeral}
-                className="rounded-lg bg-[#4f46e5] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4338ca]"
-              >
-                Ver dashboard completo
-              </button>
+              <Button onClick={onVerVisaoGeral}>Ver dashboard completo</Button>
             </div>
           </SlackMessage>
 
@@ -213,17 +195,16 @@ export function ChatScreen({
                   <DateDivider label="22 de setembro" />
 
                   <SlackMessage timestamp="09:00">
-                    <p className="mb-3 font-semibold text-gray-900">Boa notícia sobre o Carlos 🎉</p>
+                    <p className="mb-3 font-semibold text-[#1a1a1a]">Atualização sobre o Carlos</p>
                     <p className="mb-3 leading-relaxed">
-                      Vi que ele e a Beatriz trocaram bastante no Slack essa quinzena — ela deu
-                      dicas específicas sobre a objeção de autoridade, comentou em um huddle do
-                      time sobre como conduzir esse tipo de ligação, e trocou feedback com ele
-                      depois de pelo menos 2 reuniões dele.
+                      Ele e a Beatriz trocaram bastante no Slack essa quinzena — ela deu dicas
+                      específicas sobre a objeção de autoridade, comentou em um huddle do time
+                      sobre como conduzir esse tipo de ligação, e trocou feedback com ele depois
+                      de pelo menos 2 reuniões dele.
                     </p>
                     <p className="mb-3 leading-relaxed">
                       Carlos já aplicou isso: nas últimas 3 ligações, quebrou a objeção na{" "}
-                      <span className="font-semibold">2ª tentativa</span>, dentro da faixa
-                      esperada.
+                      <span className="font-mono">2ª</span> tentativa, dentro da faixa esperada.
                     </p>
                     <p className="leading-relaxed">
                       O plano de buddy começou a dar resultado. Ainda vale monitorar de perto — é
@@ -231,25 +212,19 @@ export function ChatScreen({
                     </p>
 
                     {checkInDecisao ? (
-                      <div className="mt-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                      <p className="mt-4 border-t border-[#e2e0da] pt-4 text-sm text-[#1a1a1a]">
                         {checkInDecisao === "manter"
-                          ? "✓ Acompanhamento estendido por mais 15 dias."
-                          : "✓ Registrado como objetivo atingido. Ciclo do Carlos encerrado."}
-                      </div>
+                          ? "Acompanhamento estendido por mais 15 dias."
+                          : "Registrado como objetivo atingido. Ciclo do Carlos encerrado."}
+                      </p>
                     ) : (
-                      <div className="mt-4 flex flex-wrap gap-3">
-                        <PillButton
-                          variant="secondary"
-                          onClick={() => setCheckInDecisao("manter")}
-                        >
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <Button variant="secondary" onClick={() => setCheckInDecisao("manter")}>
                           Manter o acompanhamento por mais 15 dias
-                        </PillButton>
-                        <PillButton
-                          variant="primary"
-                          onClick={() => setCheckInDecisao("encerrar")}
-                        >
+                        </Button>
+                        <Button onClick={() => setCheckInDecisao("encerrar")}>
                           Encerrar, objetivo atingido
-                        </PillButton>
+                        </Button>
                       </div>
                     )}
                   </SlackMessage>

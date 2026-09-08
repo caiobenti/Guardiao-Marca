@@ -1,10 +1,11 @@
-import { AlertTriangle, CheckCircle2, User } from "lucide-react";
+import { AlertTriangle, Check, User } from "lucide-react";
+import { Button } from "./ui";
 
 type Variant = "estrutural" | "individual";
 
-const VARIANT_STYLE: Record<Variant, { iconBg: string; iconColor: string; Icon: typeof AlertTriangle }> = {
-  estrutural: { iconBg: "bg-orange-100", iconColor: "text-orange-600", Icon: AlertTriangle },
-  individual: { iconBg: "bg-blue-100", iconColor: "text-blue-600", Icon: User },
+const VARIANT_ICON: Record<Variant, typeof AlertTriangle> = {
+  estrutural: AlertTriangle,
+  individual: User,
 };
 
 export interface DecisaoAction {
@@ -28,44 +29,30 @@ export function DecisaoPendenteCard({
   status: "pendente" | "resolvido";
   resolvedText: string;
 }) {
-  const { iconBg, iconColor, Icon } = VARIANT_STYLE[variant];
+  const Icon = status === "resolvido" ? Check : VARIANT_ICON[variant];
 
   return (
-    <div className="flex gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3.5">
-      <div
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-          status === "resolvido" ? "bg-emerald-100" : iconBg
-        }`}
-      >
-        {status === "resolvido" ? (
-          <CheckCircle2 size={18} className="text-emerald-600" />
-        ) : (
-          <Icon size={18} className={iconColor} />
-        )}
-      </div>
+    <div className="flex gap-3 border-t border-[#e2e0da] py-4 first:border-t-0 first:pt-0">
+      <Icon size={16} className="mt-0.5 shrink-0 text-[#1a1a1a]" strokeWidth={1.5} />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-gray-900">{title}</p>
+        <p className="text-sm font-semibold text-[#1a1a1a]">{title}</p>
         {status === "pendente" ? (
           <>
-            <p className="mt-0.5 text-sm leading-relaxed text-gray-600">{description}</p>
-            <div className="mt-2.5 flex flex-wrap gap-2">
+            <p className="mt-1 text-sm leading-relaxed text-[#6b6a63]">{description}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
               {actions.map((action) => (
-                <button
+                <Button
                   key={action.label}
                   onClick={action.onClick}
-                  className={
-                    action.variant === "secondary"
-                      ? "rounded-lg border border-gray-300 px-3.5 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50"
-                      : "rounded-lg bg-[#4f46e5] px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-[#4338ca]"
-                  }
+                  variant={action.variant === "secondary" ? "secondary" : "primary"}
                 >
                   {action.label}
-                </button>
+                </Button>
               ))}
             </div>
           </>
         ) : (
-          <p className="mt-0.5 text-sm leading-relaxed text-emerald-700">{resolvedText}</p>
+          <p className="mt-1 text-sm leading-relaxed text-[#6b6a63]">{resolvedText}</p>
         )}
       </div>
     </div>

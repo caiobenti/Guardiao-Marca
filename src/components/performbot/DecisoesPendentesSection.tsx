@@ -9,10 +9,8 @@ export function DecisoesPendentesSection({ onRevisarCarlos }: { onRevisarCarlos:
 
   return (
     <div>
-      <p className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-gray-500">
-        Decisões pendentes ({pendingCount})
-      </p>
-      <div className="space-y-2.5">
+      <p className="text-sm font-semibold text-[#1a1a1a]">Decisões pendentes ({pendingCount})</p>
+      <div>
         <DecisaoPendenteCard
           variant="estrutural"
           title="Pesquisa prévia do cliente caiu para o time inteiro"

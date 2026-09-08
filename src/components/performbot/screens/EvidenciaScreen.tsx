@@ -2,17 +2,45 @@
 
 import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
-import { PillButton } from "../ui";
+import { Button } from "../ui";
+import { STATUS_COLOR } from "../theme";
 
-const TRANSCRICAO = `Secretária: Olha, a diretora não costuma receber esse tipo de contato...
-Carlos: Entendo. É rápido, só queria entender se vocês já usam alguma ferramenta pra isso.
-Secretária: A gente já tem um processo, viu?
-Carlos: Sem problema. Só pra eu não incomodar de novo: teria um e-mail que eu possa mandar mais informação?
-Secretária: Pode mandar, mas não prometo que ela vai ler.
-Carlos: Perfeito, mando hoje. Obrigado pelo tempo!
+const LIGACOES: { data: string; tentativa: number; nota?: string }[] = [
+  { data: "18/08", tentativa: 2 },
+  { data: "19/08", tentativa: 4 },
+  { data: "21/08", tentativa: 3 },
+  { data: "25/08", tentativa: 3 },
+  { data: "26/08", tentativa: 1 },
+  { data: "28/08", tentativa: 3 },
+  { data: "29/08", tentativa: 5 },
+  { data: "01/09", tentativa: 4 },
+  { data: "02/09", tentativa: 2 },
+  { data: "03/09", tentativa: 3, nota: "objeção da secretária da escola" },
+];
 
-(objeção só é quebrada na 4ª tentativa, 6 minutos depois, quando Carlos muda de
-abordagem e oferece um material em vez de insistir na ligação)`;
+const TRANSCRICAO = `Secretária: A diretora não costuma atender contato direto, ela pede
+pra passar por e-mail.
+
+Carlos: Entendo, e prefiro respeitar isso mesmo. Só pra eu mandar
+algo que faça sentido: hoje, como funciona o controle de repasse de
+material entre as professoras? Pergunto porque costuma dar dor de
+cabeça em fim de bimestre.
+
+Secretária: Ah, isso aqui é uma bagunça, viu. Mas mesmo assim ela
+não costuma abrir agenda assim do nada.
+
+Carlos: Sem problema, não precisa ser hoje. Consigo 15 minutos com
+ela numa quinta de manhã, só pra mostrar como outras escolas da
+região resolveram isso.
+
+Secretária: Deixa eu ver a agenda aqui... quinta às 9h ela tem uma
+janela, posso tentar encaixar.
+
+Carlos: Perfeito, pode marcar quinta às 9h. Muito obrigado!
+
+(reunião marcada na 3ª tentativa — depois de reconhecer que a
+objeção real era agenda cheia, não falta de interesse, e oferecer
+um recorte de tempo menor ancorado num problema concreto da escola)`;
 
 export function EvidenciaScreen({
   onVoltar,
@@ -25,79 +53,93 @@ export function EvidenciaScreen({
 }) {
   const [transcricaoAberta, setTranscricaoAberta] = useState(false);
 
+  const foraDaFaixa = LIGACOES.filter((l) => l.tentativa >= 3).length;
+
   return (
     <div className="h-full overflow-y-auto">
-      <div className="flex items-center gap-3 border-b border-gray-100 px-6 py-3.5">
+      <div className="flex items-center gap-3 border-b border-[#e2e0da] px-6 py-3.5">
         <button
           onClick={onVoltar}
-          className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-800"
+          className="flex items-center gap-1.5 text-sm text-[#6b6a63] hover:text-[#1a1a1a]"
         >
-          <ArrowLeft size={16} />
+          <ArrowLeft size={16} strokeWidth={1.5} />
           Voltar
         </button>
       </div>
       <div className="mx-auto max-w-2xl px-6 py-8 sm:px-10">
-        <h1 className="mb-6 flex items-center gap-2 text-xl font-semibold text-gray-900">
+        <h1
+          className="mb-1 flex items-center gap-2 text-xl text-[#1a1a1a]"
+          style={{ fontFamily: "var(--font-serif-report)" }}
+        >
+          <span
+            className="h-2.5 w-2.5 rounded-full"
+            style={{ background: STATUS_COLOR.abaixo }}
+          />
           Carlos — Quebra de objeção
-          <span className="text-red-500">🔴</span>
-          <span className="text-sm font-normal text-gray-500">
-            (fora da faixa há 3 quinzenas)
-          </span>
         </h1>
+        <p className="mb-8 text-sm text-[#6b6a63]">Fora da faixa esperada há 3 quinzenas.</p>
 
-        <div className="space-y-5 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <div>
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">
-              Evidência
-            </p>
-            <p className="text-[15px] leading-relaxed text-gray-800">
-              Nas últimas 10 reuniões, em <span className="font-semibold">7</span> a objeção só
-              foi quebrada depois da <span className="font-semibold">3ª tentativa</span>.
-            </p>
-          </div>
+        <div className="border-t border-[#e2e0da] pt-5">
+          <p className="mb-3 text-sm text-[#1a1a1a]">
+            Últimas 10 reuniões — tentativa em que a objeção foi quebrada
+          </p>
+          <table className="w-full text-left text-sm">
+            <tbody className="divide-y divide-[#e2e0da]">
+              {LIGACOES.map((l) => (
+                <tr key={l.data}>
+                  <td className="w-24 py-2 font-mono text-[#1a1a1a]">{l.data}</td>
+                  <td className="py-2 font-mono text-[#1a1a1a]">{l.tentativa}ª tentativa</td>
+                  <td className="py-2 text-right">
+                    {l.nota && (
+                      <button
+                        onClick={() => setTranscricaoAberta((v) => !v)}
+                        className="text-xs text-[#1a1a1a] underline underline-offset-2"
+                      >
+                        {transcricaoAberta ? "ocultar transcrição" : `ver transcrição — ${l.nota}`}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
 
-          <div className="rounded-lg bg-gray-50 px-4 py-3 text-sm text-gray-600">
-            Esse padrão vem do comportamento observado nos SDRs que mais convertem nessa
-            cadeira — eles resolvem, em média, na <span className="font-medium">2ª tentativa</span>.
-          </div>
+          {transcricaoAberta && (
+            <pre className="mt-4 whitespace-pre-wrap border border-[#e2e0da] p-4 font-mono text-xs leading-relaxed text-[#1a1a1a]">
+              {TRANSCRICAO}
+            </pre>
+          )}
 
-          <div>
-            <button
-              onClick={() => setTranscricaoAberta((v) => !v)}
-              className="text-sm font-semibold text-[#4f46e5] underline underline-offset-2 hover:text-[#4338ca]"
-            >
-              {transcricaoAberta ? "Ocultar" : "Ver"} transcrição da ligação de 03/09 (objeção da
-              secretária da escola) {transcricaoAberta ? "↑" : "→"}
-            </button>
-            {transcricaoAberta && (
-              <pre className="mt-3 whitespace-pre-wrap rounded-lg border border-gray-200 bg-gray-900 p-4 font-mono text-xs leading-relaxed text-gray-100">
-                {TRANSCRICAO}
-              </pre>
-            )}
-          </div>
+          <p className="mt-4 text-sm text-[#1a1a1a]">
+            Em <span className="font-mono">{foraDaFaixa}</span> das{" "}
+            <span className="font-mono">10</span> reuniões, a objeção só foi quebrada a partir da
+            3ª tentativa.
+          </p>
+        </div>
 
-          <p className="text-sm italic text-gray-500">
+        <div className="border-t border-[#e2e0da] pt-5">
+          <p className="text-sm text-[#1a1a1a]">
+            Carlos: <span className="font-mono">3ª</span> tentativa (mediana) · Referência do
+            time: <span className="font-mono">2ª</span> tentativa
+          </p>
+          <p className="mt-2 text-sm text-[#1a1a1a]">
             Carlos é o único fora da faixa nessa dimensão essa quinzena.
           </p>
+        </div>
 
-          <div className="border-t border-gray-100 pt-5">
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">
-              Plano sugerido
-            </p>
-            <p className="text-[15px] leading-relaxed text-gray-800">
-              Sessão de role-play 1:1 com você (Gabi), usando 2 exemplos reais das próprias
-              ligações do Carlos.
-            </p>
-          </div>
+        <div className="border-t border-[#e2e0da] pt-5">
+          <p className="mb-1 text-sm text-[#1a1a1a]">Plano sugerido</p>
+          <p className="text-[15px] leading-relaxed text-[#1a1a1a]">
+            Sessão de role-play 1:1 com você (Gabi), usando 2 exemplos reais das próprias
+            ligações do Carlos.
+          </p>
+        </div>
 
-          <div className="flex gap-3 border-t border-gray-100 pt-5">
-            <PillButton variant="primary" onClick={onAceitar}>
-              ✓ Aceitar plano
-            </PillButton>
-            <PillButton variant="secondary" onClick={onAjustar}>
-              ✗ Ajustar plano
-            </PillButton>
-          </div>
+        <div className="flex gap-2 border-t border-[#e2e0da] pt-5">
+          <Button onClick={onAceitar}>Aceitar plano</Button>
+          <Button variant="secondary" onClick={onAjustar}>
+            Ajustar plano
+          </Button>
         </div>
       </div>
     </div>
